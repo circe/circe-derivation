@@ -3,7 +3,7 @@ package io.circe.derivation
 import io.circe.{ Decoder, ObjectEncoder }
 import scala.reflect.macros.blackbox
 
-class DerivationMacros(val c: blackbox.Context) {
+class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   import c.universe._
 
   private[this] case class Instance(name: TermName, definition: Tree, tpe: Type)
@@ -45,8 +45,11 @@ class DerivationMacros(val c: blackbox.Context) {
 
   private[this] val resName: TermName = TermName("res")
 
-  private[this] def extractFromRight(value: TermName, tpe: Type): Tree =
-    q"$value.asInstanceOf[_root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe]].value"
+  private[this] def extractFromRight(value: c.TermName, tpe: c.Type): c.Tree = {
+    import c.universe._
+
+    q"$value.asInstanceOf[_root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe]].${ rightValueName(c) }"
+  }
 
   private[this] def castLeft(value: TermName, tpe: Type): Tree =
     q"$value.asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"
