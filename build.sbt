@@ -34,17 +34,27 @@ val allSettings = baseSettings ++ publishSettings
 
 val docMappingsApiDir = settingKey[String]("Subdirectory in site target directory for API docs")
 
-lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("."))
+val root = project.in(file("."))
+  .settings(allSettings)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-jawn" % circeVersion
+    )
+  )
+  .aggregate(derivation, derivationJS)
+  .dependsOn(derivation)
+
+lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("derivation"))
   .settings(allSettings)
   .settings(
     moduleName := "circe-derivation",
-    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     libraryDependencies ++= Seq(
       scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
       scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion % "test",
-      "io.circe" %%% "circe-jawn" % circeVersion % "test",
+      "io.circe" %%% "circe-parser" % circeVersion % "test",
       "io.circe" %%% "circe-testing" % circeVersion % "test"
     ),
     ghpagesNoJekyll := true,
@@ -53,11 +63,18 @@ lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("."))
   .jvmConfigure(_.copy(id = "derivation"))
   .jsConfigure(_.copy(id = "derivationJS"))
   .jvmSettings(
+    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
 
 lazy val derivation = derivationBase.jvm
 lazy val derivationJS = derivationBase.js
+
+lazy val noPublishSettings = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false
+)
 
 lazy val publishSettings = Seq(
   releaseCrossBuild := true,
@@ -74,10 +91,8 @@ lazy val publishSettings = Seq(
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
-  /* Someday maybe Scaladoc will actually work on package object-only projects.
   autoAPIMappings := true,
   apiURL := Some(url("https://circe.github.io/circe-derivation/api/")),
-  */
   scmInfo := Some(
     ScmInfo(
       url("https://github.com/circe/circe-derivation"),
