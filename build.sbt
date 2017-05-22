@@ -97,12 +97,12 @@ lazy val examplesJS = examplesBase.js
 lazy val examplesDerivationBase = crossProject.crossType(CrossType.Pure).in(file("examples/derivation"))
   .settings(allSettings)
   .settings(noPublishSettings)
+  .settings(
+    coverageExcludedPackages := "io.circe.examples.*"
+  )
   .dependsOn(derivationBase, examplesBase)
   .jvmConfigure(_.copy(id = "examplesDerivation"))
   .jsConfigure(_.copy(id = "examplesDerivationJS"))
-  .jsSettings(
-    coverageExcludedPackages := "io.circe.examples.derivation.*"
-  )
 
 lazy val examplesDerivation = examplesDerivationBase.jvm
 lazy val examplesDerivationJS = examplesDerivationBase.js
@@ -110,6 +110,9 @@ lazy val examplesDerivationJS = examplesDerivationBase.js
 lazy val examplesGenericBase = crossProject.crossType(CrossType.Pure).in(file("examples/generic"))
   .settings(allSettings)
   .settings(noPublishSettings)
+  .settings(
+    coverageExcludedPackages := "io.circe.examples.*"
+  )
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
   .dependsOn(examplesBase)
   .jvmConfigure(_.copy(id = "examplesGeneric"))
