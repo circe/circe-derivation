@@ -13,7 +13,7 @@ particular:
 * It's not published for Scala 2.10.
 * It only supports "semi-automatic" derivation.
 
-On a more positive note, it has no dependencies apart from circe-core and should compile much more
+On a more positive note, it has no dependencies except for circe-core and should compile much more
 quickly in most cases.
 
 ## Contributors and participation
