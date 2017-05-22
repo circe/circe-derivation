@@ -16,6 +16,23 @@ particular:
 On a more positive note, it has no dependencies apart from circe-core and should compile much more
 quickly in most cases.
 
+## Who is this for?
+
+There are already a lot of ways to define encoders and decoders in circe (or to avoid defining
+them using fully-automatic derivation). In general users who want to use generic derivation should
+stick to circe-generic, which is well-tested, robust, and provides a clear path from automatic
+generic derivation (which can be useful for initial exploration or in relatively simple
+applications) to semi-automatic derivation (which has some syntactic overhead but tends to compile
+much more quickly and to be easier to reason about).
+
+Users who want the generic derivation experience but need particular functionality that isn't
+provided in circe-generic may be interested in circe-generic-extras, which supports transforming
+member names, using default values, etc. (at the expense of even slower compile times).
+
+This library is for people who don't care about the full generic derivation experience but just
+want fast builds and instances that stay in sync with their definitions, and who don't mind a bit
+of boilerplate (a couple of lines per case class).
+
 ## Contributors and participation
 
 This project supports the Scala [code of conduct][code-of-conduct] and we want
