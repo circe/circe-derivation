@@ -38,7 +38,12 @@ val docMappingsApiDir = settingKey[String]("Subdirectory in site target director
 val root = project.in(file("."))
   .settings(allSettings)
   .settings(noPublishSettings)
-  .settings(libraryDependencies += "io.circe" %% "circe-jawn" % circeVersion)
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-jawn" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion
+    )
+  )
   .aggregate(
     derivation, derivationJS,
     examplesDerivation, examplesDerivationJS,
