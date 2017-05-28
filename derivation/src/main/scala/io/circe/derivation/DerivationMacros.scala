@@ -1,12 +1,23 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, ObjectEncoder }
+import io.circe.{ Decoder, Encoder, ObjectEncoder }
 import scala.reflect.macros.blackbox
 
 class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   import c.universe._
 
-  private[this] case class Instance(name: TermName, definition: Tree, tpe: Type)
+  private[this] val encoderSymbol: Symbol = c.symbolOf[Encoder.type]
+  private[this] val decoderSymbol: Symbol = c.symbolOf[Decoder.type]
+  private[this] val encoderTC: Type = typeOf[Encoder[_]].typeConstructor
+  private[this] val decoderTC: Type = typeOf[Decoder[_]].typeConstructor
+
+  private[this] case class Instance(tc: Type, tpe: Type, name: TermName) {
+    def resolve(): Tree = c.inferImplicitValue(appliedType(tc, List(tpe))) match {
+      case EmptyTree => c.abort(c.enclosingPosition, s"Could not find implicit $tpe")
+      case instance => instance
+    }
+  }
+
   private[this] case class Instances(encoder: Instance, decoder: Instance)
   private[this] case class Member(name: TermName, decodedName: String, tpe: Type)
 
@@ -15,8 +26,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       members.foldLeft(List.empty[Instances]) {
         case (acc, Member(_, _, tpe)) if acc.find(_.encoder.tpe =:= tpe).isEmpty =>
           val instances = Instances(
-            Instance(TermName(c.freshName("encoder")), q"_root_.io.circe.Encoder[$tpe]", tpe),
-            Instance(TermName(c.freshName("decoder")), q"_root_.io.circe.Decoder[$tpe]", tpe)
+            Instance(encoderTC, tpe, TermName(c.freshName("encoder"))),
+            Instance(decoderTC, tpe, TermName(c.freshName("decoder")))
           )
 
           instances :: acc
@@ -31,7 +42,9 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   private[this] def membersFromPrimaryConstr(tpe: Type): Option[List[Member]] = tpe.decls.collectFirst {
     case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.flatten.map { field =>
-      Member(field.name.toTermName, field.name.decodedName.toString, tpe.decl(field.name).asMethod.returnType)
+      val asf = tpe.decl(field.name).asMethod.returnType.asSeenFrom(tpe, tpe.typeSymbol)
+
+      Member(field.name.toTermName, field.name.decodedName.toString, asf)
     }
   }
 
@@ -42,6 +55,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     c.enclosingPosition,
     s"Could not identify primary constructor for $tpe"
   )
+
+  private[this] def checkValSafety(owner: Symbol)(tree: Tree): Boolean = tree match {
+    case q"$f(...$x)" if x.nonEmpty => checkValSafety(owner)(f) && x.forall(_.forall(checkValSafety(owner)))
+    case x if x.isTerm => x.symbol.owner == owner
+    case x => false
+  }
+
+  private[this] def checkEncoderValSafety(tree: Tree): Boolean = checkValSafety(encoderSymbol)(tree)
+  private[this] def checkDecoderValSafety(tree: Tree): Boolean = checkValSafety(decoderSymbol)(tree)
 
   private[this] val resName: TermName = TermName("res")
 
@@ -69,8 +91,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         c.Expr[Decoder[T]](q"_root_.io.circe.Decoder.const(new $tpe())")
       } else {
         val instanceDefs: List[Tree] = repr.instances.map(_.decoder).map {
-          case Instance(name, definition, instanceType) =>
-            q"private[this] val $name: _root_.io.circe.Decoder[$instanceType] = $definition"
+          case instance @ Instance(_, instanceType, name) =>
+            val resolved = instance.resolve()
+
+            if (checkDecoderValSafety(resolved)) {
+              q"private[this] val $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
+            } else {
+              q"private[this] def $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
+            }
         }
 
         val membersWithNames = repr.members.zipWithIndex.map {
@@ -170,17 +198,23 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] = repr.instances.map(_.encoder).map {
-        case Instance(name, definition, instanceType) =>
-          q"private[this] val $name: _root_.io.circe.Encoder[$instanceType] = $definition"
+        case instance @ Instance(_, instanceType, name) =>
+          val resolved = instance.resolve()
+
+          if (checkEncoderValSafety(resolved)) {
+            q"private[this] val $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
+          } else {
+            q"private[this] def $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
+          }
       }
 
       val fields: List[Tree] = repr.members.map {
         case Member(name, decodedName, tpe) =>
           repr.encoder(tpe) match {
-            case Instance(instance, _, instanceType) => q"""
+            case Instance(_, _, instanceName) => q"""
               _root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
                 $decodedName,
-                $instance.apply(a.$name)
+                $instanceName.apply(a.$name)
               )
             """
           }
