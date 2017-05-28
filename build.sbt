@@ -54,7 +54,9 @@ val root = project.in(file("."))
 lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("derivation"))
   .settings(allSettings)
   .settings(
+    name := "Circe derivation",
     moduleName := "circe-derivation",
+    description := "circe derivation",
     libraryDependencies ++= Seq(
       scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
       scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
