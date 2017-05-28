@@ -35,7 +35,7 @@ object Instances {
   val encodeBar3: ObjectEncoder[Bar] = deriveEncoder
   val decodeBaz3: Decoder[Baz] = deriveDecoder
   val encodeBaz3: ObjectEncoder[Baz] = deriveEncoder
-  
+
   val decodeFoo4: Decoder[Foo] = deriveDecoder
   val encodeFoo4: ObjectEncoder[Foo] = deriveEncoder
   val decodeBar4: Decoder[Bar] = deriveDecoder
