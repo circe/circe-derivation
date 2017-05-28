@@ -29,7 +29,9 @@ case class Baz(
   w: Int,
   x: Int,
   y: Int,
-  z: Foo
+  z: Foo,
+  aa: Qux[Int],
+  bb: Qux[Bar]
 )
 
 object Baz {
@@ -61,7 +63,9 @@ object Baz {
       x <- Arbitrary.arbitrary[Int]
       y <- Arbitrary.arbitrary[Int]
       z <- Arbitrary.arbitrary[Foo]
-    } yield Baz(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
+      aa <- Arbitrary.arbitrary[Qux[Int]]
+      bb <- Arbitrary.arbitrary[Qux[Bar]]
+    } yield Baz(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, aa, bb)
   )
 
   implicit val eqBaz: Eq[Baz] = Eq.fromUniversalEquals

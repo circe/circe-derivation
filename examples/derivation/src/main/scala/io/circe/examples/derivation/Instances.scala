@@ -1,14 +1,17 @@
 package io.circe.examples.derivation
 
-import io.circe.{ Decoder, ObjectEncoder }
+import io.circe.{ Decoder, Encoder, ObjectEncoder }
 import io.circe.derivation.{ deriveDecoder, deriveEncoder }
-import io.circe.examples.{ Bar, Baz, Foo }
+import io.circe.examples.{ Bar, Baz, Foo, Qux }
 
 object Instances {
   implicit val decodeFoo0: Decoder[Foo] = deriveDecoder
   implicit val encodeFoo0: ObjectEncoder[Foo] = deriveEncoder
   implicit val decodeBar0: Decoder[Bar] = deriveDecoder
   implicit val encodeBar0: ObjectEncoder[Bar] = deriveEncoder
+  implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] = deriveDecoder
+  implicit def encodeQux[A: Encoder]: ObjectEncoder[Qux[A]] = deriveEncoder
+
   val decodeBaz0: Decoder[Baz] = deriveDecoder
   val encodeBaz0: ObjectEncoder[Baz] = deriveEncoder
 
