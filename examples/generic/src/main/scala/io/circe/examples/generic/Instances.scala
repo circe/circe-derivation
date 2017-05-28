@@ -1,8 +1,8 @@
 package io.circe.examples.generic
 
 import io.circe.{ Decoder, Encoder, ObjectEncoder }
-import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
 import io.circe.examples.{ Bar, Baz, Foo, Qux }
+import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
 
 object Instances {
   implicit val decodeFoo0: Decoder[Foo] = deriveDecoder
