@@ -1,3 +1,5 @@
+import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
+
 organization in ThisBuild := "io.circe"
 
 val compilerOptions = Seq(
@@ -14,8 +16,8 @@ val compilerOptions = Seq(
   "-Xfuture"
 )
 
-val catsVersion = "0.9.0"
-val circeVersion = "0.8.0"
+val catsVersion = "1.0.0-MF"
+val circeVersion = "0.9.0-M1"
 val previousCirceDerivationVersion = "0.7.1"
 
 val baseSettings = Seq(
@@ -35,6 +37,12 @@ val allSettings = baseSettings ++ publishSettings
 
 val docMappingsApiDir = settingKey[String]("Subdirectory in site target directory for API docs")
 
+def crossModule(path: String, crossType: CrossType = CrossType.Pure) = {
+  val id = path.split("/").reduce(_ + _.capitalize)
+
+  CrossProject(jvmId = id, jsId = id + "JS", file(path), crossType)
+}
+
 val root = project.in(file("."))
   .settings(allSettings)
   .settings(noPublishSettings)
@@ -51,7 +59,7 @@ val root = project.in(file("."))
   )
   .dependsOn(derivation)
 
-lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("derivation"))
+lazy val derivationBase = crossModule("derivation")
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
@@ -68,8 +76,6 @@ lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("deriva
     docMappingsApiDir := "api"
   )
   .dependsOn(examplesBase % "test")
-  .jvmConfigure(_.copy(id = "derivation"))
-  .jsConfigure(_.copy(id = "derivationJS"))
   .jvmSettings(
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
@@ -81,7 +87,7 @@ lazy val derivationBase = crossProject.crossType(CrossType.Pure).in(file("deriva
 lazy val derivation = derivationBase.jvm
 lazy val derivationJS = derivationBase.js
 
-lazy val examplesBase = crossProject.crossType(CrossType.Pure).in(file("examples"))
+lazy val examplesBase = crossModule("examples")
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -90,26 +96,22 @@ lazy val examplesBase = crossProject.crossType(CrossType.Pure).in(file("examples
       "org.typelevel" %%% "cats-core" % catsVersion
     )
   )
-  .jvmConfigure(_.copy(id = "examples"))
-  .jsConfigure(_.copy(id = "examplesJS"))
 
 lazy val examples = examplesBase.jvm
 lazy val examplesJS = examplesBase.js
 
-lazy val examplesDerivationBase = crossProject.crossType(CrossType.Pure).in(file("examples/derivation"))
+lazy val examplesDerivationBase = crossModule("examples/derivation")
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*"
   )
   .dependsOn(derivationBase, examplesBase)
-  .jvmConfigure(_.copy(id = "examplesDerivation"))
-  .jsConfigure(_.copy(id = "examplesDerivationJS"))
 
 lazy val examplesDerivation = examplesDerivationBase.jvm
 lazy val examplesDerivationJS = examplesDerivationBase.js
 
-lazy val examplesGenericBase = crossProject.crossType(CrossType.Pure).in(file("examples/generic"))
+lazy val examplesGenericBase = crossModule("examples/generic")
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -117,15 +119,13 @@ lazy val examplesGenericBase = crossProject.crossType(CrossType.Pure).in(file("e
   )
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
   .dependsOn(examplesBase)
-  .jvmConfigure(_.copy(id = "examplesGeneric"))
-  .jsConfigure(_.copy(id = "examplesGenericJS"))
 
 lazy val examplesGeneric = examplesGenericBase.jvm
 lazy val examplesGenericJS = examplesGenericBase.js
 
 lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
+  publish := {},
+  publishLocal := {},
   publishArtifact := false
 )
 
