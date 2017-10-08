@@ -124,7 +124,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val reversed = membersWithNames.reverse
 
         def decode(member: Member): Tree =
-          q"c.get[${ member.tpe }](${ transformName(member.decodedName) })(${ repr.decoder(member.tpe).name })"
+          q"${ repr.decoder(member.tpe).name }.tryDecode(c.downField(${ transformName(member.decodedName) }))"
 
         val last: Tree = q"""
           {
@@ -196,9 +196,22 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
               private[this] def errors(
                 results: _root_.scala.List[_root_.io.circe.AccumulatingDecoder.Result[_]]
-              ): _root_.scala.List[_root_.io.circe.DecodingFailure] = results.flatMap {
-                case _root_.cats.data.Validated.Valid(_) => _root_.scala.Nil
-                case _root_.cats.data.Validated.Invalid(errors) => errors.toList
+              ): _root_.scala.List[_root_.io.circe.DecodingFailure] = {
+                val invalids: _root_.scala.collection.mutable.Builder[
+                  _root_.io.circe.DecodingFailure,
+                  _root_.scala.List[_root_.io.circe.DecodingFailure]
+                ] = _root_.scala.List.newBuilder[_root_.io.circe.DecodingFailure]
+
+                val iterator: _root_.scala.Iterator[_root_.io.circe.AccumulatingDecoder.Result[_]] = results.toIterator
+
+                while (iterator.hasNext) {
+                  iterator.next() match {
+                    case _root_.cats.data.Validated.Invalid(errors) => invalids ++= errors.toList
+                    case _ =>
+                  }
+                }
+
+                invalids.result
               }
 
               final override def decodeAccumulating(
