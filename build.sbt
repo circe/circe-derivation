@@ -16,9 +16,9 @@ val compilerOptions = Seq(
   "-Xfuture"
 )
 
-val catsVersion = "1.0.0-MF"
-val circeVersion = "0.9.0-M1"
-val previousCirceDerivationVersion = "0.7.1"
+val catsVersion = "1.0.1"
+val circeVersion = "0.9.0"
+val previousCirceDerivationVersion = "0.8.0-M2"
 
 val baseSettings = Seq(
   scalacOptions ++= compilerOptions,
