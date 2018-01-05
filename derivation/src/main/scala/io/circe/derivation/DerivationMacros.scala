@@ -18,14 +18,51 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     }
   }
 
-  private[this] case class Instances(encoder: Instance, decoder: Instance)
+  private[this] case class Instances(tpe: Type, encoder: Instance, decoder: Instance)
   private[this] case class Member(name: TermName, decodedName: String, tpe: Type)
 
-  private[this] case class ProductRepr(members: List[Member]) {
+  private[this] object Member {
+    final def fromSymbol(tpe: Type)(sym: Symbol): Member = {
+      val memberName = sym.name
+
+      Member(
+        memberName.toTermName,
+        memberName.decodedName.toString,
+        tpe.decl(memberName).asMethod.returnType.asSeenFrom(tpe, tpe.typeSymbol)
+      )
+    }
+  }
+
+  private[this] sealed abstract class ProductRepr {
+    protected[this] def instantiate(params: List[List[Tree]]): Tree
+
+    def instantiate: Tree = instantiate(paramListsWithNames.map(_.map(p => q"${p._2}")))
+    def instantiateAccumulating: Tree = instantiate(
+      paramListsWithNames.map(
+        _.map {
+          case (Member(_, _, tpe), name) => extractFromValid(name, tpe)
+        }
+      )
+    )
+
+    val tpe: Type
+    val paramLists: List[List[Member]]
+
+    val paramListsWithNames: List[List[(Member, TermName)]] =
+      paramLists.foldLeft((List.empty[List[(Member, TermName)]], 1)) {
+        case ((acc, i), paramList) =>
+          val nextParamList = paramList.zipWithIndex.map {
+            case (member, j) => (member, TermName(s"res${i + j}"))
+          }
+
+          (nextParamList :: acc, i + nextParamList.size)
+      }._1.reverse
+
     val instances: List[Instances] =
-      members.foldLeft(List.empty[Instances]) {
-        case (acc, Member(_, _, tpe)) if acc.find(_.encoder.tpe =:= tpe).isEmpty =>
+      paramLists.flatten.foldLeft(List.empty[Instances]) {
+        case (acc, Member(_, _, tpe)) if acc.find(_.tpe =:= tpe).isEmpty =>
           val instances = Instances(
+            tpe,
             Instance(encoderTC, tpe, TermName(c.freshName("encoder"))),
             Instance(decoderTC, tpe, TermName(c.freshName("decoder")))
           )
@@ -36,20 +73,35 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     private[this] def fail(tpe: Type): Nothing = c.abort(c.enclosingPosition, s"Invalid instance lookup for $tpe")
 
-    def encoder(tpe: Type): Instance = instances.map(_.encoder).find(_.tpe =:= tpe).getOrElse(fail(tpe))
-    def decoder(tpe: Type): Instance = instances.map(_.decoder).find(_.tpe =:= tpe).getOrElse(fail(tpe))
+    def encoder(tpe: Type): Instance = instances.find(_.tpe =:= tpe).getOrElse(fail(tpe)).encoder
+    def decoder(tpe: Type): Instance = instances.find(_.tpe =:= tpe).getOrElse(fail(tpe)).decoder
+  }
+  private[this] case class ProductReprWithApply(tpe: Type, paramLists: List[List[Member]]) extends ProductRepr {
+    protected[this] def instantiate(params: List[List[Tree]]): Tree = q"${ tpe.typeSymbol.companion }.apply(...$params)"
+  }
+  private[this] case class ProductReprWithConstr(tpe: Type, paramLists: List[List[Member]]) extends ProductRepr {
+    protected[this] def instantiate(params: List[List[Tree]]): Tree = q"new $tpe(...$params)"
   }
 
-  private[this] def membersFromPrimaryConstr(tpe: Type): Option[List[Member]] = tpe.decls.collectFirst {
-    case m: MethodSymbol if m.isPrimaryConstructor => m.paramLists.flatten.map { field =>
-      val asf = tpe.decl(field.name).asMethod.returnType.asSeenFrom(tpe, tpe.typeSymbol)
+  private[this] val applyName: TermName = TermName("apply")
 
-      Member(field.name.toTermName, field.name.decodedName.toString, asf)
-    }
+  private[this] def membersFromCompanionApply(tpe: Type): Option[ProductRepr] = tpe.companion.decl(applyName) match {
+    case NoSymbol => None
+    case s =>
+      s.alternatives.collect {
+        case m: MethodSymbol => m.paramLists
+      }.sortBy(-_.map(_.size).sum).headOption.map { applyParams =>
+        ProductReprWithApply(tpe, applyParams.map(_.map(Member.fromSymbol(tpe))))
+      }
+  }
+
+  private[this] def membersFromPrimaryConstr(tpe: Type): Option[ProductRepr] = tpe.decls.collectFirst {
+    case m: MethodSymbol if m.isPrimaryConstructor =>
+      ProductReprWithConstr(tpe, m.paramLists.map(_.map(Member.fromSymbol(tpe))))
   }
 
   private[this] def productRepr(tpe: Type): Option[ProductRepr] =
-    membersFromPrimaryConstr(tpe).map(ProductRepr(_))
+    membersFromCompanionApply(tpe).orElse(membersFromPrimaryConstr(tpe))
 
   private[this] def fail(tpe: Type): Nothing = c.abort(
     c.enclosingPosition,
@@ -102,7 +154,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     def transformName(name: String): Tree = nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
-      if (repr.members.isEmpty) {
+      if (repr.paramLists.flatten.isEmpty) {
         c.Expr[Decoder[T]](q"_root_.io.circe.Decoder.const(new $tpe())")
       } else {
 
@@ -117,11 +169,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             }
         }
 
-        val membersWithNames = repr.members.zipWithIndex.map {
-          case (member, i) => (member, TermName(s"res$i"))
-        }
-
-        val reversed = membersWithNames.reverse
+        val reversed = repr.paramListsWithNames.flatten.reverse
 
         def decode(member: Member): Tree =
           q"${ repr.decoder(member.tpe).name }.tryDecode(c.downField(${ transformName(member.decodedName) }))"
@@ -136,7 +184,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
                 ${ extractFromRight(resName, reversed.head._1.tpe) }
 
               new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](
-                new $tpe(..${ membersWithNames.map(_._2) })
+                ${ repr.instantiate }
               ): _root_.io.circe.Decoder.Result[$tpe]
             } else ${ castLeft(resName, tpe) }
           }
@@ -156,16 +204,17 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           """
         }
 
-        val results: List[Tree] = reversed.reverse.map {
-          case (member, resultName) => q"""
-            val $resultName: _root_.io.circe.AccumulatingDecoder.Result[${ member.tpe }] =
-              ${ repr.decoder(member.tpe).name }.tryDecodeAccumulating(
-                c.downField(${ transformName(member.decodedName) })
-              )
-          """
-        }
-
-        val resultNames: List[TermName] = membersWithNames.map(_._2)
+        val (results: List[Tree], resultNames: List[TermName]) = reversed.reverse.map {
+          case (member, resultName) => (
+            q"""
+              val $resultName: _root_.io.circe.AccumulatingDecoder.Result[${ member.tpe }] =
+                ${ repr.decoder(member.tpe).name }.tryDecodeAccumulating(
+                  c.downField(${ transformName(member.decodedName) })
+                )
+            """,
+            resultName
+          )
+        }.unzip
 
         val resultAccumulating: Tree = q"""
           {
@@ -177,7 +226,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               _root_.cats.data.Validated.valid[
                 _root_.cats.data.NonEmptyList[_root_.io.circe.DecodingFailure],
                 $tpe
-              ](new $tpe(..${ membersWithNames.map(mn => extractFromValid(mn._2, mn._1.tpe)) }))
+              ](${ repr.instantiateAccumulating })
             } else {
               _root_.cats.data.Validated.invalid[
                 _root_.cats.data.NonEmptyList[_root_.io.circe.DecodingFailure],
@@ -243,7 +292,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           }
       }
 
-      val fields: List[Tree] = repr.members.map {
+      val fields: List[Tree] = repr.paramLists.flatten.map {
         case Member(name, decodedName, tpe) =>
           repr.encoder(tpe) match {
             case Instance(_, _, instanceName) => q"""
