@@ -11,9 +11,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] val encoderTC: Type = typeOf[Encoder[_]].typeConstructor
   private[this] val decoderTC: Type = typeOf[Decoder[_]].typeConstructor
 
+  private[this] def failWithMessage(message: String): Nothing = c.abort(c.enclosingPosition, message)
+
   private[this] case class Instance(tc: Type, tpe: Type, name: TermName) {
     def resolve(): Tree = c.inferImplicitValue(appliedType(tc, List(tpe))) match {
-      case EmptyTree => c.abort(c.enclosingPosition, s"Could not find implicit $tpe")
+      case EmptyTree => c.abort(c.enclosingPosition, s"Could not find $tc instance for $tpe")
       case instance => instance
     }
   }
@@ -24,11 +26,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] object Member {
     final def fromSymbol(tpe: Type)(sym: Symbol): Member = {
       val memberName = sym.name
+      val memberDecl = tpe.decl(memberName)
+
+      if (!memberDecl.isMethod) failWithMessage(
+        s"No method $memberName in $tpe (this is probably because a constructor parameter isn't a val)"
+      )
 
       Member(
         memberName.toTermName,
         memberName.decodedName.toString,
-        tpe.decl(memberName).asMethod.returnType.asSeenFrom(tpe, tpe.typeSymbol)
+        memberDecl.asMethod.returnType.asSeenFrom(tpe, tpe.typeSymbol)
       )
     }
   }
