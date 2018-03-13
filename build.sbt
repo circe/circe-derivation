@@ -54,12 +54,13 @@ val root = project.in(file("."))
   )
   .aggregate(
     derivation, derivationJS,
+    examplesScrooge,
     examplesDerivation, examplesDerivationJS,
     examplesGeneric, examplesGenericJS
   )
   .dependsOn(derivation)
 
-lazy val derivationBase = crossModule("derivation")
+lazy val derivationBase = crossModule("derivation", CrossType.Full)
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
@@ -83,6 +84,7 @@ lazy val derivationBase = crossModule("derivation")
   .jsSettings(
     coverageExcludedPackages := "io.circe.derivation.*"
   )
+  .jvmConfigure(_.dependsOn(examplesScrooge % "test"))
 
 lazy val derivation = derivationBase.jvm
 lazy val derivationJS = derivationBase.js
@@ -100,24 +102,39 @@ lazy val examplesBase = crossModule("examples")
 lazy val examples = examplesBase.jvm
 lazy val examplesJS = examplesBase.js
 
-lazy val examplesDerivationBase = crossModule("examples/derivation")
+lazy val examplesScrooge = project.in(file("examples/scrooge"))
+  .settings(allSettings)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "scrooge-core" % "18.3.0" exclude("com.twitter", "libthrift"),
+      "org.apache.thrift" % "libthrift" % "0.9.2",
+      "org.scalacheck" %% "scalacheck" % "1.13.5",
+      "org.typelevel" %% "cats-core" % catsVersion
+    )
+  )
+
+lazy val examplesDerivationBase = crossModule("examples/derivation", CrossType.Full)
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*"
   )
+  .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(derivationBase, examplesBase)
 
 lazy val examplesDerivation = examplesDerivationBase.jvm
 lazy val examplesDerivationJS = examplesDerivationBase.js
 
-lazy val examplesGenericBase = crossModule("examples/generic")
+lazy val examplesGenericBase = crossModule("examples/generic", CrossType.Full)
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*"
   )
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
+  .jvmSettings(libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0")
+  .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(examplesBase)
 
 lazy val examplesGeneric = examplesGenericBase.jvm
