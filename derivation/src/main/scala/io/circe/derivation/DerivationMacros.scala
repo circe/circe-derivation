@@ -66,12 +66,12 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       }._1.reverse
 
     val instances: List[Instances] =
-      paramLists.flatten.foldLeft(List.empty[Instances]) {
-        case (acc, Member(_, _, tpe)) if acc.find(_.tpe =:= tpe).isEmpty =>
+      paramLists.flatten.zipWithIndex.foldLeft(List.empty[Instances]) {
+        case (acc, (Member(_, _, tpe), i)) if acc.find(_.tpe =:= tpe).isEmpty =>
           val instances = Instances(
             tpe,
-            Instance(encoderTC, tpe, TermName(c.freshName("encoder"))),
-            Instance(decoderTC, tpe, TermName(c.freshName("decoder")))
+            Instance(encoderTC, tpe, TermName(s"encoder$i")),
+            Instance(decoderTC, tpe, TermName(s"decoder$i"))
           )
 
           instances :: acc
@@ -179,7 +179,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val reversed = repr.paramListsWithNames.flatten.reverse
 
         def decode(member: Member): Tree =
-          q"${ repr.decoder(member.tpe).name }.tryDecode(c.downField(${ transformName(member.decodedName) }))"
+          q"this.${ repr.decoder(member.tpe).name }.tryDecode(c.downField(${ transformName(member.decodedName) }))"
 
         val last: Tree = q"""
           {
@@ -285,7 +285,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             case Instance(_, _, instanceName) => q"""
               _root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
                 ${ transformName(decodedName) },
-                $instanceName.apply(a.$name)
+                this.$instanceName.apply(a.$name)
               )
             """
           }
