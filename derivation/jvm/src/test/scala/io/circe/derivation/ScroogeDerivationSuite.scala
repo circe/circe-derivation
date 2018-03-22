@@ -16,4 +16,14 @@ class ScroogeDerivationSuite extends CirceSuite {
 
   checkLaws("Codec[SomethingStruct]", CodecTests[SomethingStruct].codec)
   checkLaws("Codec[BiggerStruct]", CodecTests[BiggerStruct].codec)
+
+  checkLaws(
+    "CodecAgreement[SomethingStruct]",
+    CodecAgreementTests[SomethingStruct](
+      ScroogeGenericAutoCodecs.decodeSomethingStruct,
+      ScroogeGenericAutoCodecs.encodeSomethingStruct,
+      decodeSomethingStruct,
+      encodeSomethingStruct
+    ).codecAgreement
+  )
 }
