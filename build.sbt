@@ -72,21 +72,23 @@ lazy val derivationBase = crossModule("derivation", CrossType.Full)
       scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
       scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
       "io.circe" %%% "circe-core" % circeVersion,
-      "io.circe" %%% "circe-parser" % circeVersion % "test",
-      "io.circe" %%% "circe-testing" % circeVersion % "test"
+      "io.circe" %%% "circe-generic" % circeVersion % Test,
+      "io.circe" %%% "circe-parser" % circeVersion % Test,
+      "io.circe" %%% "circe-testing" % circeVersion % Test
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api"
   )
   .dependsOn(examplesBase % "test")
   .jvmSettings(
+    libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test,
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
   .jsSettings(
     coverageExcludedPackages := "io.circe.derivation.*"
   )
-  .jvmConfigure(_.dependsOn(examplesScrooge % "test"))
+  .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
 lazy val derivation = derivationBase.jvm
 lazy val derivationJS = derivationBase.js

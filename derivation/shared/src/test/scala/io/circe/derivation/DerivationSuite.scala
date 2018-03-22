@@ -30,4 +30,54 @@ class DerivationSuite extends CirceSuite {
 
   checkLaws("Codec[MultiParamListClass]", CodecTests[MultiParamListClass].codec)
   checkLaws("Codec[SimpleClass]", CodecTests[SimpleClass].codec)
+
+  checkLaws(
+    "CodecAgreement[Foo]",
+    CodecAgreementTests[Foo](
+      GenericAutoCodecs.decodeFoo,
+      GenericAutoCodecs.encodeFoo,
+      decodeFoo,
+      encodeFoo
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[Bar]",
+    CodecAgreementTests[Bar](
+      GenericAutoCodecs.decodeBar,
+      GenericAutoCodecs.encodeBar,
+      decodeBar,
+      encodeBar
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[Baz]",
+    CodecAgreementTests[Baz](
+      GenericAutoCodecs.decodeBaz,
+      GenericAutoCodecs.encodeBaz,
+      decodeBaz,
+      encodeBaz
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[Qux[Baz]]",
+    CodecAgreementTests[Qux[Baz]](
+      GenericAutoCodecs.decodeQux[Baz],
+      GenericAutoCodecs.encodeQux[Baz],
+      decodeQux[Baz],
+      encodeQux[Baz]
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[SimpleClass]",
+    CodecAgreementTests[SimpleClass](
+      GenericAutoCodecs.decodeSimpleClass,
+      GenericAutoCodecs.encodeSimpleClass,
+      decodeSimpleClass,
+      encodeSimpleClass
+    ).codecAgreement
+  )
 }
