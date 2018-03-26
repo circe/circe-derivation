@@ -1,11 +1,8 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder, ObjectEncoder }
-import io.circe.examples.{ Bar, Baz, Foo, Qux, SimpleClass }
-import io.circe.generic.semiauto.{
-  deriveDecoder => genericDeriveDecoder,
-  deriveEncoder => genericDeriveEncoder
-}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
+import io.circe.examples._
+import io.circe.generic.semiauto.{deriveDecoder => genericDeriveDecoder, deriveEncoder => genericDeriveEncoder}
 
 object GenericAutoCodecs {
   implicit val decodeFoo: Decoder[Foo] = genericDeriveDecoder
@@ -19,4 +16,8 @@ object GenericAutoCodecs {
 
   implicit val decodeSimpleClass: Decoder[SimpleClass] = genericDeriveDecoder
   implicit val encodeSimpleClass: Encoder[SimpleClass] = genericDeriveEncoder
+  implicit val decodeCustomApplyParamNamesClass: Decoder[CustomApplyParamNamesClass] = deriveDecoder
+  implicit val encodeCustomApplyParamNamesClass: Encoder[CustomApplyParamNamesClass] = deriveEncoder
+  implicit val decodeCustomApplyParamTypesClass: Decoder[CustomApplyParamTypesClass] = deriveDecoder
+  implicit val encodeCustomApplyParamTypesClass: Encoder[CustomApplyParamTypesClass] = deriveEncoder
 }
