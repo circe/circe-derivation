@@ -1,7 +1,7 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder, ObjectEncoder }
-import io.circe.examples.{ Bar, Baz, Foo, MultiParamListClass, Qux, SimpleClass }
+import io.circe.{Decoder, Encoder, ObjectEncoder}
+import io.circe.examples._
 import io.circe.testing.CodecTests
 
 object DerivationSuiteCodecs extends Serializable {
@@ -18,6 +18,10 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeMultiParamListClass: Encoder[MultiParamListClass] = deriveEncoder
   implicit val decodeSimpleClass: Decoder[SimpleClass] = deriveDecoder
   implicit val encodeSimpleClass: Encoder[SimpleClass] = deriveEncoder
+  implicit val decodeCustomApplyParamNamesClass: Decoder[CustomApplyParamNamesClass] = deriveDecoder
+  implicit val encodeCustomApplyParamNamesClass: Encoder[CustomApplyParamNamesClass] = deriveEncoder
+  implicit val decodeCustomApplyParamTypesClass: Decoder[CustomApplyParamTypesClass] = deriveDecoder
+  implicit val encodeCustomApplyParamTypesClass: Encoder[CustomApplyParamTypesClass] = deriveEncoder
 }
 
 class DerivationSuite extends CirceSuite {
@@ -30,6 +34,8 @@ class DerivationSuite extends CirceSuite {
 
   checkLaws("Codec[MultiParamListClass]", CodecTests[MultiParamListClass].codec)
   checkLaws("Codec[SimpleClass]", CodecTests[SimpleClass].codec)
+  checkLaws("Codec[CustomApplyParamNamesClass]", CodecTests[CustomApplyParamNamesClass].codec)
+  checkLaws("Codec[CustomApplyParamTypesClass]", CodecTests[CustomApplyParamTypesClass].codec)
 
   checkLaws(
     "CodecAgreement[Foo]",
@@ -78,6 +84,26 @@ class DerivationSuite extends CirceSuite {
       GenericAutoCodecs.encodeSimpleClass,
       decodeSimpleClass,
       encodeSimpleClass
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[CustomApplyParamNamesClass]",
+    CodecAgreementTests[CustomApplyParamNamesClass](
+      GenericAutoCodecs.decodeCustomApplyParamNamesClass,
+      GenericAutoCodecs.encodeCustomApplyParamNamesClass,
+      decodeCustomApplyParamNamesClass,
+      encodeCustomApplyParamNamesClass
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreement[CustomApplyParamTypesClass]",
+    CodecAgreementTests[CustomApplyParamTypesClass](
+      GenericAutoCodecs.decodeCustomApplyParamTypesClass,
+      GenericAutoCodecs.encodeCustomApplyParamTypesClass,
+      decodeCustomApplyParamTypesClass,
+      encodeCustomApplyParamTypesClass
     ).codecAgreement
   )
 }

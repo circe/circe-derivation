@@ -102,13 +102,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       }
   }
 
-  private[this] def membersFromPrimaryConstr(tpe: Type): Option[ProductRepr] = tpe.decls.collectFirst {
-    case m: MethodSymbol if m.isPrimaryConstructor =>
-      ProductReprWithConstr(tpe, m.paramLists.map(_.map(Member.fromSymbol(tpe))))
-  }
+  private[this] def membersFromPrimaryConstr(tpe: Type): Option[ProductRepr] =
+    if (tpe.typeSymbol.isAbstract) {
+      None
+    } else {
+      tpe.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor && m.isPublic && !m.isAbstract =>
+          ProductReprWithConstr(tpe, m.paramLists.map(_.map(Member.fromSymbol(tpe))))
+      }
+    }
 
   private[this] def productRepr(tpe: Type): Option[ProductRepr] =
-    membersFromCompanionApply(tpe).orElse(membersFromPrimaryConstr(tpe))
+    membersFromPrimaryConstr(tpe).orElse(membersFromCompanionApply(tpe))
 
   private[this] def fail(tpe: Type): Nothing = c.abort(
     c.enclosingPosition,
