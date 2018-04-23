@@ -18,8 +18,8 @@ val compilerOptions = Seq(
   "-Xfuture"
 )
 
-val catsVersion = "1.0.1"
-val circeVersion = "0.9.3"
+val catsVersion = "0.9.0"
+val circeVersion = "0.8.0"
 val previousCirceDerivationVersion = "0.9.0-M2"
 
 val baseSettings = Seq(
