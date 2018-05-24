@@ -18,7 +18,7 @@ val compilerOptions = Seq(
   "-Xfuture"
 )
 
-val catsVersion = "1.0.1"
+val catsVersion = "1.1.0"
 val circeVersion = "0.9.3"
 val previousCirceDerivationVersion = "0.9.0-M2"
 
@@ -111,7 +111,7 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "scrooge-core" % "18.3.0" exclude("com.twitter", "libthrift"),
+      "com.twitter" %% "scrooge-core" % "18.5.0" exclude("com.twitter", "libthrift"),
       "org.apache.thrift" % "libthrift" % "0.9.2",
       "org.scalacheck" %% "scalacheck" % "1.13.5",
       "org.typelevel" %% "cats-core" % catsVersion
