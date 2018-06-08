@@ -20,6 +20,7 @@ val compilerOptions = Seq(
 
 val catsVersion = "1.1.0"
 val circeVersion = "0.9.3"
+val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.9.0-M2"
 
 val baseSettings = Seq(
@@ -77,7 +78,8 @@ lazy val derivationBase = crossModule("derivation", CrossType.Full)
       "io.circe" %%% "circe-testing" % circeVersion % Test
     ),
     ghpagesNoJekyll := true,
-    docMappingsApiDir := "api"
+    docMappingsApiDir := "api",
+    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
   )
   .dependsOn(examplesBase % "test")
   .jvmSettings(
