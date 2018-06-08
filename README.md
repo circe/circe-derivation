@@ -10,8 +10,9 @@ circe-generic in that this derivation is not based on Shapeless's generic repres
 classes and ADTs, and it is not intended to be as fully featured as `io.circe.generic`. In
 particular:
 
-* It's not published for Scala 2.10.
+* Sealed hierarchies (ADTs) aren't supported
 * It only supports "semi-automatic" derivation.
+* It's not published for Scala 2.10.
 
 On a more positive note, it has no dependencies apart from circe-core and should compile much more
 quickly in most cases.
