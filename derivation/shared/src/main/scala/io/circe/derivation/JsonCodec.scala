@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{derivation, Decoder, Encoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
