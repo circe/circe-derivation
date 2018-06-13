@@ -250,10 +250,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
         c.Expr[Decoder[T]](
           q"""
-            new _root_.io.circe.derivation.DerivedDecoder[$tpe] {
+            new _root_.io.circe.Decoder[$tpe] {
               ..$instanceDefs
 
               final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = $result
+
+              private[this] def errors(
+                              results: _root_.scala.List[_root_.io.circe.AccumulatingDecoder.Result[_]]
+              ): _root_.scala.List[_root_.io.circe.DecodingFailure] = {
+                results.iterator.collect {
+                      case _root_.cats.data.Validated.Invalid(errors) => errors.toList
+                }.flatten.toList
+              }
 
               final override def decodeAccumulating(
                 c: _root_.io.circe.HCursor
