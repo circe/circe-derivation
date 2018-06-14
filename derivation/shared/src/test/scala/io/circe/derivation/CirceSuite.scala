@@ -1,5 +1,6 @@
 package io.circe.derivation
 
+import cats.Eq
 import cats.instances.AllInstances
 import cats.syntax.{ AllSyntax, EitherOps }
 import io.circe.testing.{ ArbitraryInstances, EqInstances }
@@ -23,4 +24,13 @@ trait CirceSuite extends FlatSpec with GeneratorDrivenPropertyChecks
     case ((id, prop), 0) => name should s"obey $id" in Checkers.check(prop)
     case ((id, prop), _) => it should s"obey $id" in Checkers.check(prop)
   }
+
+  def assertEq[A: Eq](expected: A, actual: A): Unit =
+    assert(
+      expected === actual,
+      s"""Expected did not match actual:
+         |
+         |Expected: $expected
+         |Actual:   $actual"""
+    )
 }

@@ -135,25 +135,78 @@ class JsonCodecMacrosSuite extends CirceSuite {
     ObjectEncoder[SelfRecursiveWithOption]
   }
 
-  it should "allow only one, named argument set to true" in {
-    // Can't supply both
+  it should "allow only one, named argument set" in {
+    // Can't supply both encoder and decoder instructions
     assertDoesNotCompile("@JsonCodec(encodeOnly = true, decodeOnly = true) case class X(a: Int)")
+
+    // Can't supply both encoder and config -- this test raises a warning about
+    // annotation being turned into a block, will never happen since we
+    // disallow multiple parameters in the macro
+    assertDoesNotCompile("@JsonCodec(encodeOnly = true, config = Configuration.default) case class X(a: Int)")
+
     // Must specify the argument name
     assertDoesNotCompile("@JsonCodec(true) case class X(a: Int)")
+
     // Can't specify false
     assertDoesNotCompile("@JsonCodec(encodeOnly = false) case class X(a: Int)")
-  }
-
-  "@JsonCodec(encodeOnly = true)" should "only provide Encoder instances" in {
-    @JsonCodec(encodeOnly = true) case class CaseClassEncodeOnly(foo: String, bar: Int)
-    Encoder[CaseClassEncodeOnly]
-    ObjectEncoder[CaseClassEncodeOnly]
-    assertDoesNotCompile("Decoder[CaseClassEncodeOnly]")
   }
 
   "@JsonCodec(decodeOnly = true)" should "provide Decoder instances" in {
     @JsonCodec(decodeOnly = true) case class CaseClassDecodeOnly(foo: String, bar: Int)
     Decoder[CaseClassDecodeOnly]
     assertDoesNotCompile("Encoder[CaseClassDecodeOnly]")
+  }
+
+  "@JsonCodec(config = Configuration.default)" should "create both encoder and decoder" in {
+    @JsonCodec(config = Configuration.default) case class CaseClass(fooCamel: String, barCamel: Int)
+    ObjectEncoder[CaseClass]
+    Decoder[CaseClass]
+    Encoder[CaseClass]
+  }
+
+  it should "generate the correct JSON" in {
+    @JsonCodec(config = Configuration.default)
+    case class CaseClass(fooCamel: String, barCamel: Int)
+
+    val expectedJson = """{"fooCamel":"foo","barCamel":1}"""
+    val generatedJson = Encoder[CaseClass].apply(CaseClass("foo", 1)).noSpaces
+
+    assertEq(expectedJson, generatedJson)
+  }
+
+  it should "generate snake case JSON" in {
+    @JsonCodec(config = Configuration.default.withSnakeCaseMemberNames)
+    case class CaseClass(fooSnake: String, barSnake: Int)
+
+    val generatedJson = Encoder[CaseClass].apply(CaseClass("foo", 1)).noSpaces
+    val expectedJson = """{"foo_snake":"foo","bar_snake":1}"""
+
+    assertEq(expectedJson, generatedJson)
+  }
+
+  it should "generate kebab case JSON" in {
+    @JsonCodec(config = Configuration.default.withKebabCaseMemberNames)
+    case class CaseClass(fooKebab: String, barKebab: Int)
+
+    val generatedJson = Encoder[CaseClass].apply(CaseClass("foo", 1)).noSpaces
+    val expectedJson = """{"foo-kebab":"foo","bar-kebab":1}"""
+
+    assertEq(expectedJson, generatedJson)
+  }
+
+  "@JsonCodec(config = Configuration.decodeOnly)" should "provide Decoder instances" in {
+    @JsonCodec(config = Configuration.decodeOnly)
+    case class CaseClassDecodeOnly(foo: String, bar: Int)
+
+    Decoder[CaseClassDecodeOnly]
+    assertDoesNotCompile("Encoder[CaseClassDecodeOnly]")
+  }
+
+  "@JsonCodec(config = Configuration.encodeOnly)" should "provide Encoder instances" in {
+    @JsonCodec(config = Configuration.encodeOnly)
+    case class CaseClassEncodeOnly(foo: String, bar: Int)
+
+    Encoder[CaseClassEncodeOnly]
+    assertDoesNotCompile("Decoder[CaseClassEncodeOnly]")
   }
 }
