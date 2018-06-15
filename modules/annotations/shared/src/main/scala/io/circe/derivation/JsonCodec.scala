@@ -58,8 +58,8 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   private[this] val (codecType: JsonCodecType, config: Tree) = {
     c.prefix.tree match {
       case q"new ${`macroName`}()" => (JsonCodecType.Both, defaultCfg)
-      case q"new ${`macroName`}($cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
       case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
+      case q"new ${`macroName`}($cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
       case _ => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
     }
   }
