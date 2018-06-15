@@ -5,8 +5,6 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 class JsonCodec(
-  encodeOnly: Boolean = false,
-  decodeOnly: Boolean = false,
   config: Configuration = Configuration.default
 ) extends scala.annotation.StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro GenericJsonCodecMacros.jsonCodecAnnotationMacro
@@ -60,9 +58,8 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   private[this] val (codecType: JsonCodecType, config: Tree) = {
     c.prefix.tree match {
       case q"new ${`macroName`}()" => (JsonCodecType.Both, defaultCfg)
+      case q"new ${`macroName`}($cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
       case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
-      case q"new ${`macroName`}(encodeOnly = true)" => (JsonCodecType.EncodeOnly, defaultCfg)
-      case q"new ${`macroName`}(decodeOnly = true)" => (JsonCodecType.DecodeOnly, defaultCfg)
       case _ => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
     }
   }
@@ -78,7 +75,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       case t =>
         c.warning(
           c.enclosingPosition,
-          s"Couldn't determine type of configuration - will produce both encoder and decoder ($t, ${typeOf[Configuration.Both]}, $tree)"
+          "Couldn't determine type of configuration - will produce both encoder and decoder"
         )
         JsonCodecType.Both
     }

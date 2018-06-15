@@ -135,33 +135,21 @@ class JsonCodecMacrosSuite extends CirceSuite {
     ObjectEncoder[SelfRecursiveWithOption]
   }
 
-  it should "allow only one, named argument set" in {
-    // Can't supply both encoder and decoder instructions
-    assertDoesNotCompile("@JsonCodec(encodeOnly = true, decodeOnly = true) case class X(a: Int)")
-
-    // Can't supply both encoder and config -- this test raises a warning about
-    // annotation being turned into a block, will never happen since we
-    // disallow multiple parameters in the macro
-    assertDoesNotCompile("@JsonCodec(encodeOnly = true, config = Configuration.default) case class X(a: Int)")
-
-    // Must specify the argument name
-    assertDoesNotCompile("@JsonCodec(true) case class X(a: Int)")
-
-    // Can't specify false
-    assertDoesNotCompile("@JsonCodec(encodeOnly = false) case class X(a: Int)")
-  }
-
-  "@JsonCodec(decodeOnly = true)" should "provide Decoder instances" in {
-    @JsonCodec(decodeOnly = true) case class CaseClassDecodeOnly(foo: String, bar: Int)
-    Decoder[CaseClassDecodeOnly]
-    assertDoesNotCompile("Encoder[CaseClassDecodeOnly]")
-  }
-
   "@JsonCodec(config = Configuration.default)" should "create both encoder and decoder" in {
-    @JsonCodec(config = Configuration.default) case class CaseClass(fooCamel: String, barCamel: Int)
-    ObjectEncoder[CaseClass]
-    Decoder[CaseClass]
-    Encoder[CaseClass]
+    @JsonCodec case class CaseClass1(fooCamel: String, barCamel: Int)
+    ObjectEncoder[CaseClass1]
+    Decoder[CaseClass1]
+    Encoder[CaseClass1]
+
+    @JsonCodec(Configuration.default) case class CaseClass2(fooCamel: String, barCamel: Int)
+    ObjectEncoder[CaseClass2]
+    Decoder[CaseClass2]
+    Encoder[CaseClass2]
+
+    @JsonCodec(config = Configuration.default) case class CaseClass3(fooCamel: String, barCamel: Int)
+    ObjectEncoder[CaseClass3]
+    Decoder[CaseClass3]
+    Encoder[CaseClass3]
   }
 
   it should "generate the correct JSON" in {
