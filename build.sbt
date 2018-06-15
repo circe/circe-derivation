@@ -63,7 +63,7 @@ val root = project.in(file("."))
   )
   .dependsOn(derivation)
 
-lazy val derivationBase = crossModule("derivation", CrossType.Full)
+lazy val derivationBase = crossModule("modules/derivation", CrossType.Full)
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
