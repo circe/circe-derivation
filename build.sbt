@@ -57,13 +57,14 @@ val root = project.in(file("."))
   )
   .aggregate(
     derivation, derivationJS,
+    derivationAnnotations, derivationAnnotationsJS,
     examplesScrooge,
     examplesDerivation, examplesDerivationJS,
     examplesGeneric, examplesGenericJS
   )
   .dependsOn(derivation)
 
-lazy val derivationBase = crossModule("derivation", CrossType.Full)
+lazy val derivationBase = crossModule("modules/derivation", CrossType.Full)
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
@@ -79,7 +80,6 @@ lazy val derivationBase = crossModule("derivation", CrossType.Full)
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
-    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
   )
   .dependsOn(examplesBase % "test")
   .jvmSettings(
@@ -94,6 +94,27 @@ lazy val derivationBase = crossModule("derivation", CrossType.Full)
 
 lazy val derivation = derivationBase.jvm
 lazy val derivationJS = derivationBase.js
+
+lazy val derivationAnnotationsBase = crossModule("modules/annotations", CrossType.Full)
+  .settings(allSettings)
+  .settings(
+    name := "Circe derivation",
+    moduleName := "circe-derivation-annotations",
+    description := "circe derivation annotations",
+    ghpagesNoJekyll := true,
+    docMappingsApiDir := "api",
+    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
+  )
+  .dependsOn(derivationBase, derivationBase % "test->test")
+  .jvmSettings(
+    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion),
+    addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
+  )
+  .jvmConfigure(_.dependsOn(examplesScrooge % Test))
+
+lazy val derivationAnnotations = derivationAnnotationsBase.jvm
+lazy val derivationAnnotationsJS = derivationAnnotationsBase.js
+
 
 lazy val examplesBase = crossModule("examples")
   .settings(allSettings)
