@@ -10,21 +10,21 @@ package io.circe.derivation
   */
 sealed trait Configuration {
 
-  type A <: Configuration
+  type Config <: Configuration
 
   /** Transforms the names of type members in the JSON, allowing, for example,
    *  formatting or case changes
    */
   def transformMemberNames: String => String
 
-  protected def getA(transformMemberNames: String => String): A
+  protected def getA(transformMemberNames: String => String): Config
 
   /** Creates a configuration which produces snake cased member names */
-  final def withSnakeCaseMemberNames: A =
+  final def withSnakeCaseMemberNames: Config =
     getA(renaming.snakeCase)
 
   /** Creates a configuration which produces kebab cased member names */
-  final def withKebabCaseMemberNames: A =
+  final def withKebabCaseMemberNames: Config =
     getA(renaming.kebabCase)
 }
 
@@ -35,14 +35,14 @@ object Configuration {
    *
    *  This configuration creates *both* encoder and decoder.
    */
-  final case class Both(
+  final case class Codec(
     transformMemberNames: String => String
   ) extends Configuration {
 
-    type A = Both
+    type Config = Codec
 
     protected final def getA(transformMemberNames: String => String) =
-      Both(transformMemberNames)
+      Codec(transformMemberNames)
   }
 
   /** Configuration allowing customisation of JSON produced when encoding or
@@ -54,7 +54,7 @@ object Configuration {
     transformMemberNames: String => String,
   ) extends Configuration {
 
-    type A = DecodeOnly
+    type Config = DecodeOnly
 
     protected final def getA(transformMemberNames: String => String) =
       DecodeOnly(transformMemberNames)
@@ -69,15 +69,15 @@ object Configuration {
     transformMemberNames: String => String
   ) extends Configuration {
 
-    type A = EncodeOnly
+    type Config = EncodeOnly
 
     protected final def getA(transformMemberNames: String => String) =
       EncodeOnly(transformMemberNames)
   }
 
   /** Create a default configuration with both decoder and encoder */
-  val default: Both =
-    Both(identity)
+  val default: Codec =
+    Codec(identity)
 
   /** Create a default configuration with **only** encoder */
   val encodeOnly: EncodeOnly =
