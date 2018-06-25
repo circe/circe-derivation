@@ -1,9 +1,9 @@
-package io.circe.derivation
+package io.circe.derivation.annotations
 
 import cats.instances.AllInstances
 import cats.kernel.Eq
 import io.circe.{Decoder, Encoder, ObjectEncoder}
-import io.circe.derivation.jsoncodecmacrossuiteaux._
+import io.circe.derivation.CirceSuite
 import io.circe.testing.{ ArbitraryInstances, CodecTests }
 import org.scalacheck.{ Arbitrary, Gen }
 
@@ -119,6 +119,8 @@ package jsoncodecmacrossuiteaux {
 }
 
 class JsonCodecMacrosSuite extends CirceSuite {
+  import jsoncodecmacrossuiteaux._
+
   checkLaws("Codec[Simple]", CodecTests[Simple].codec)
   checkLaws("Codec[Single]", CodecTests[Single].codec)
   checkLaws("Codec[Typed1[Int]]", CodecTests[Typed1[Int]].codec)

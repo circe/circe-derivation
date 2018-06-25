@@ -1,4 +1,6 @@
-package io.circe.derivation
+package io.circe.derivation.annotations
+
+import io.circe.derivation.renaming
 
 /**
   * Configuration allowing customisation of the JSON produced when encoding, or
