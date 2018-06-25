@@ -1,4 +1,4 @@
-package io.circe.derivation
+package io.circe.derivation.annotations
 
 import io.circe.{Decoder, Encoder, ObjectEncoder}
 import scala.language.experimental.macros
@@ -53,7 +53,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   }
 
   private[this] val defaultCfg: Tree =
-    q"_root_.io.circe.derivation.Configuration.default"
+    q"_root_.io.circe.derivation.annotations.Configuration.default"
 
   private[this] val (codecType: JsonCodecType, config: Tree) = {
     c.prefix.tree match {
