@@ -1,4 +1,4 @@
-import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
+import sbtcrossproject.{crossProject, CrossType}
 import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 
@@ -40,12 +40,6 @@ val allSettings = baseSettings ++ publishSettings
 
 val docMappingsApiDir = settingKey[String]("Subdirectory in site target directory for API docs")
 
-def crossModule(path: String, crossType: CrossType = CrossType.Pure) = {
-  val id = path.split("/").reduce(_ + _.capitalize)
-
-  CrossProject(jvmId = id, jsId = id + "JS", file(path), crossType)
-}
-
 val root = project.in(file("."))
   .settings(allSettings)
   .settings(noPublishSettings)
@@ -56,15 +50,18 @@ val root = project.in(file("."))
     )
   )
   .aggregate(
-    derivation, derivationJS,
-    derivationAnnotations, derivationAnnotationsJS,
+    derivationJVM, derivationJS,
+    annotationsJVM, annotationsJS,
     examplesScrooge,
-    examplesDerivation, examplesDerivationJS,
-    examplesGeneric, examplesGenericJS
+    examplesDerivationJVM, examplesDerivationJS,
+    examplesGenericJVM, examplesGenericJS
   )
-  .dependsOn(derivation)
+  .dependsOn(derivationJVM)
 
-lazy val derivationBase = crossModule("modules/derivation", CrossType.Full)
+lazy val derivation = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("modules/derivation"))
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
@@ -81,7 +78,7 @@ lazy val derivationBase = crossModule("modules/derivation", CrossType.Full)
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
   )
-  .dependsOn(examplesBase % "test")
+  .dependsOn(examples % Test)
   .jvmSettings(
     libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test,
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
@@ -92,10 +89,13 @@ lazy val derivationBase = crossModule("modules/derivation", CrossType.Full)
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
-lazy val derivation = derivationBase.jvm
-lazy val derivationJS = derivationBase.js
+lazy val derivationJVM = derivation.jvm
+lazy val derivationJS = derivation.js
 
-lazy val derivationAnnotationsBase = crossModule("modules/annotations", CrossType.Full)
+lazy val annotations = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("modules/annotations"))
   .settings(allSettings)
   .settings(
     name := "Circe derivation",
@@ -105,18 +105,23 @@ lazy val derivationAnnotationsBase = crossModule("modules/annotations", CrossTyp
     docMappingsApiDir := "api",
     addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
   )
-  .dependsOn(derivationBase, derivationBase % "test->test")
+  .dependsOn(derivation, derivation % "test->test")
   .jvmSettings(
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
+  .jsSettings(
+    coverageExcludedPackages := "io.circe.derivation.*"
+  )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
-lazy val derivationAnnotations = derivationAnnotationsBase.jvm
-lazy val derivationAnnotationsJS = derivationAnnotationsBase.js
+lazy val annotationsJVM = annotations.jvm
+lazy val annotationsJS = annotations.js
 
-
-lazy val examplesBase = crossModule("examples")
+lazy val examples = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("examples"))
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -126,8 +131,8 @@ lazy val examplesBase = crossModule("examples")
     )
   )
 
-lazy val examples = examplesBase.jvm
-lazy val examplesJS = examplesBase.js
+lazy val examplesJVM = examples.jvm
+lazy val examplesJS = examples.js
 
 lazy val examplesScrooge = project.in(file("examples/scrooge"))
   .settings(allSettings)
@@ -141,19 +146,25 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
     )
   )
 
-lazy val examplesDerivationBase = crossModule("examples/derivation", CrossType.Full)
+lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("examples/derivation"))
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*"
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
-  .dependsOn(derivationBase, examplesBase)
+  .dependsOn(derivation, examples)
 
-lazy val examplesDerivation = examplesDerivationBase.jvm
-lazy val examplesDerivationJS = examplesDerivationBase.js
+lazy val examplesDerivationJVM = examplesDerivation.jvm
+lazy val examplesDerivationJS = examplesDerivation.js
 
-lazy val examplesGenericBase = crossModule("examples/generic", CrossType.Full)
+lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Full)
+  .in(file("examples/generic"))
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -162,10 +173,10 @@ lazy val examplesGenericBase = crossModule("examples/generic", CrossType.Full)
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
   .jvmSettings(libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0")
   .jvmConfigure(_.dependsOn(examplesScrooge))
-  .dependsOn(examplesBase)
+  .dependsOn(examples)
 
-lazy val examplesGeneric = examplesGenericBase.jvm
-lazy val examplesGenericJS = examplesGenericBase.js
+lazy val examplesGenericJVM = examplesGeneric.jvm
+lazy val examplesGenericJS = examplesGeneric.js
 
 lazy val noPublishSettings = Seq(
   publish := {},
