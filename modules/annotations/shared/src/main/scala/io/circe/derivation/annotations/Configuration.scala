@@ -53,7 +53,7 @@ object Configuration {
    *  This configuration **only** creates decoder.
    */
   final case class DecodeOnly(
-    transformMemberNames: String => String,
+    transformMemberNames: String => String
   ) extends Configuration {
 
     type Config = DecodeOnly
