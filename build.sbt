@@ -18,7 +18,7 @@ val compilerOptions = Seq(
   "-Xfuture"
 )
 
-val catsVersion = "1.4.0"
+val catsVersion = "1.5.0"
 val circeVersion = "0.10.1"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.9.0-M5"
