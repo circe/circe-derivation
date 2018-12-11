@@ -10,12 +10,12 @@ circe-generic in that this derivation is not based on Shapeless's generic repres
 classes and ADTs, and it is not intended to be as fully featured as `io.circe.generic`. In
 particular:
 
-* Sealed hierarchies (ADTs) aren't supported
+* Sealed hierarchies (ADTs) aren't supported ([yet](https://github.com/circe/circe-derivation/issues/8)).
 * It only supports "semi-automatic" derivation.
-* It's not published for Scala 2.10.
 
-On a more positive note, it has no dependencies apart from circe-core and should compile much more
-quickly in most cases.
+On a more positive note, it has no dependencies apart from circe-core, should compile much more
+quickly in most cases, and supports some classes that circe-generic doesn't (e.g. Scrooge-generated
+representations of Thrift structs).
 
 ## Who is this for?
 
@@ -33,6 +33,11 @@ member names, using default values, etc. (at the expense of even slower compile 
 This library is for people who don't care about the full generic derivation experience but just
 want fast builds and instances that stay in sync with their definitions, and who don't mind a bit
 of boilerplate (a couple of lines per case class).
+
+Note that the `io.circe.derivation` API is almost identical to `io.circe.generic.semiauto`, and in
+many situations it can be used as a drop-in replacement. If you're currently using circe-generic's
+`deriveEncoder` and `deriveDecoder` for case classes, but are still suffering from slow compilation,
+adding a circe-derivation dependency and switching the imports is probably worth a try.
 
 ## Contributors and participation
 
