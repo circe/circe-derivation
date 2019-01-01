@@ -139,7 +139,7 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "scrooge-core" % "18.9.0",
+      "com.twitter" %% "scrooge-core" % "18.9.1",
       "org.apache.thrift" % "libthrift" % "0.10.0",
       "org.scalacheck" %% "scalacheck" % "1.13.5",
       "org.typelevel" %% "cats-core" % catsVersion
