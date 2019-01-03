@@ -32,7 +32,7 @@ val baseSettings = Seq(
     _.filterNot(Set("-Ywarn-unused-import"))
   },
   coverageHighlighting := true,
-  coverageScalacPluginVersion := "1.4.0-M5",
+  coverageScalacPluginVersion := "1.3.1",
   (scalastyleSources in Compile) ++= (unmanagedSourceDirectories in Compile).value
 )
 
