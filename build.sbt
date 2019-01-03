@@ -21,7 +21,7 @@ val compilerOptions = Seq(
 val catsVersion = "1.5.0"
 val circeVersion = "0.11.0"
 val paradiseVersion = "2.1.1"
-val previousCirceDerivationVersion = "0.9.0-M5"
+val previousCirceDerivationVersion = "0.10.0-M1"
 
 val baseSettings = Seq(
   scalacOptions ++= compilerOptions,
@@ -32,7 +32,7 @@ val baseSettings = Seq(
     _.filterNot(Set("-Ywarn-unused-import"))
   },
   coverageHighlighting := true,
-  coverageScalacPluginVersion := "1.3.0",
+  coverageScalacPluginVersion := "1.4.0-M5",
   (scalastyleSources in Compile) ++= (unmanagedSourceDirectories in Compile).value
 )
 
@@ -139,7 +139,7 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "scrooge-core" % "18.9.0",
+      "com.twitter" %% "scrooge-core" % "18.12.0",
       "org.apache.thrift" % "libthrift" % "0.10.0",
       "org.scalacheck" %% "scalacheck" % "1.13.5",
       "org.typelevel" %% "cats-core" % catsVersion
