@@ -126,7 +126,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalacheck" %%% "scalacheck" % "1.13.5",
+      "org.scalacheck" %%% "scalacheck" % "1.14.0",
       "org.typelevel" %%% "cats-core" % catsVersion
     )
   )
@@ -141,7 +141,7 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
     libraryDependencies ++= Seq(
       "com.twitter" %% "scrooge-core" % "19.1.0",
       "org.apache.thrift" % "libthrift" % "0.10.0",
-      "org.scalacheck" %% "scalacheck" % "1.13.5",
+      "org.scalacheck" %% "scalacheck" % "1.14.0",
       "org.typelevel" %% "cats-core" % catsVersion
     )
   )
