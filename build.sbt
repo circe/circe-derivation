@@ -153,7 +153,8 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
-    coverageExcludedPackages := "io.circe.examples.*"
+    coverageExcludedPackages := "io.circe.examples.*",
+    wartremoverErrors ++= Warts.unsafe
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(derivation, examples)
