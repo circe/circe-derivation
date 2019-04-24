@@ -228,11 +228,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           )
         }.unzip
 
+        val resultErrors: List[Tree] = resultNames.map { resultName =>
+          q"errors($resultName)"
+        }
+
         val resultAccumulating: Tree = q"""
           {
             ..$results
 
-            val dfs: _root_.scala.List[_root_.io.circe.DecodingFailure] = errors($resultNames)
+            val dfs: _root_.scala.List[_root_.io.circe.DecodingFailure] = List(..$resultErrors).flatten
 
             if (dfs.isEmpty) {
               _root_.cats.data.Validated.valid[
@@ -256,11 +260,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = $result
 
               private[this] def errors(
-                              results: _root_.scala.List[_root_.io.circe.AccumulatingDecoder.Result[_]]
-              ): _root_.scala.List[_root_.io.circe.DecodingFailure] = {
-                results.iterator.collect {
-                      case _root_.cats.data.Validated.Invalid(errors) => errors.toList
-                }.flatten.toList
+                result: _root_.io.circe.AccumulatingDecoder.Result[_]
+              ): _root_.scala.List[_root_.io.circe.DecodingFailure] = result match {
+                case _root_.cats.data.Validated.Valid(_)   => _root_.scala.Nil
+                case _root_.cats.data.Validated.Invalid(e) => e.toList
               }
 
               final override def decodeAccumulating(
