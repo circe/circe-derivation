@@ -212,7 +212,7 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
   .jvmSettings(
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value)) Seq(
-        "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
+        "com.stripe" %% "scrooge-shapes" % "0.1.0"
       ) else Nil
     )
   )
