@@ -11,20 +11,33 @@ val compilerOptions = Seq(
   "-language:existentials",
   "-language:higherKinds",
   "-unchecked",
-  "-Yno-adapted-args",
   "-Ywarn-dead-code",
-  "-Ywarn-numeric-widen",
-  "-Ywarn-unused-import",
-  "-Xfuture"
+  "-Ywarn-numeric-widen"
 )
 
-val catsVersion = "1.6.0"
-val circeVersion = "0.11.1"
+val catsVersion = "2.0.0-M1"
+val circeVersion = "0.12.0-M1"
 val paradiseVersion = "2.1.1"
-val previousCirceDerivationVersion = "0.10.0-M1"
+val previousCirceDerivationVersion = "0.11.0-M1"
+val scalaCheckVersion = "1.14.0"
+
+def priorTo2_13(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+}
 
 val baseSettings = Seq(
   scalacOptions ++= compilerOptions,
+  scalacOptions ++= (
+    if (priorTo2_13(scalaVersion.value)) Seq(
+      "-Xfuture",
+      "-Yno-adapted-args",
+      "-Ywarn-unused-import"
+    ) else Seq(
+      "-Ywarn-unused:imports"
+    )
+  ),
   scalacOptions in (Compile, console) ~= {
     _.filterNot(Set("-Ywarn-unused-import"))
   },
@@ -73,14 +86,19 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
-      "io.circe" %%% "circe-testing" % circeVersion % Test
+      "io.circe" %%% "circe-testing" % circeVersion % Test,
+      "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP4" % Test
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
   )
   .dependsOn(examples % Test)
   .jvmSettings(
-    libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test,
+    libraryDependencies ++= (
+      if (priorTo2_13(scalaVersion.value)) Seq(
+        "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
+      ) else Nil
+    ),
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
@@ -103,7 +121,15 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     description := "circe derivation annotations",
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
-    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
+    //addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch),
+    libraryDependencies ++= (
+      if (priorTo2_13(scalaVersion.value)) Seq(
+        compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
+      ) else Nil
+    ),
+    scalacOptions ++= (
+      if (priorTo2_13(scalaVersion.value)) Nil else Seq("-Ymacro-annotations")
+    )
   )
   .dependsOn(derivation, derivation % "test->test")
   .jvmSettings(
@@ -126,7 +152,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "org.scalacheck" %%% "scalacheck" % "1.13.5",
+      "org.scalacheck" %%% "scalacheck" % scalaCheckVersion,
       "org.typelevel" %%% "cats-core" % catsVersion
     )
   )
@@ -139,10 +165,22 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "scrooge-core" % "19.4.0",
-      "org.apache.thrift" % "libthrift" % "0.10.0",
-      "org.scalacheck" %% "scalacheck" % "1.13.5",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
       "org.typelevel" %% "cats-core" % catsVersion
+    ),
+    libraryDependencies ++= (
+      if (priorTo2_13(scalaVersion.value)) Seq(
+        "com.twitter" %% "scrooge-core" % "19.4.0",
+        "org.apache.thrift" % "libthrift" % "0.10.0"
+      ) else Nil
+    ),
+    scroogeThriftSourceFolder in Compile := (
+      if (priorTo2_13(scalaVersion.value)) (
+        baseDirectory.value / "src" / "main" / "thrift"
+      ) else (
+        // A hack to avoid generating Scrooge source on 2.13 for now.
+        baseDirectory.value / "_none_"
+      )
     )
   )
 
@@ -171,7 +209,13 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
     coverageExcludedPackages := "io.circe.examples.*"
   )
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
-  .jvmSettings(libraryDependencies += "com.stripe" %% "scrooge-shapes" % "0.1.0")
+  .jvmSettings(
+    libraryDependencies ++= (
+      if (priorTo2_13(scalaVersion.value)) Seq(
+        "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
+      ) else Nil
+    )
+  )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(examples)
 
