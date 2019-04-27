@@ -121,7 +121,6 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     description := "circe derivation annotations",
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
-    //addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch),
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value)) Seq(
         compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
