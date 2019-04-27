@@ -4,7 +4,7 @@ import cats.Eq
 import cats.instances.AllInstances
 import cats.syntax.{ AllSyntax, EitherOps }
 import io.circe.testing.{ ArbitraryInstances, EqInstances }
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.check.{ Checkers, ScalaCheckDrivenPropertyChecks }
 import org.typelevel.discipline.Laws
 import scala.language.implicitConversions
@@ -12,7 +12,7 @@ import scala.language.implicitConversions
 /**
  * An opinionated stack of traits to improve consistency and reduce boilerplate in circe tests.
  */
-trait CirceSuite extends FlatSpec with ScalaCheckDrivenPropertyChecks
+trait CirceSuite extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks
   with AllInstances with AllSyntax
   with ArbitraryInstances with EqInstances {
   override def convertToEqualizer[T](left: T): Equalizer[T] =
