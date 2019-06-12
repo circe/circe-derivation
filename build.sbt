@@ -15,11 +15,12 @@ val compilerOptions = Seq(
   "-Ywarn-numeric-widen"
 )
 
-val catsVersion = "2.0.0-M1"
-val circeVersion = "0.12.0-M1"
+val catsVersion = "2.0.0-M4"
+val circeVersion = "0.12.0-M3"
 val paradiseVersion = "2.1.1"
-val previousCirceDerivationVersion = "0.11.0-M1"
+val previousCirceDerivationVersion = "0.12.0-M1"
 val scalaCheckVersion = "1.14.0"
+val scalaJavaTimeVersion = "2.0.0-RC2"
 
 def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -88,7 +89,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-generic" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
-      "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP4" % Test
+      "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP8" % Test
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
@@ -104,7 +105,10 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
   .jsSettings(
-    coverageExcludedPackages := "io.circe.derivation.*"
+    coverageExcludedPackages := "io.circe.derivation.*",
+    libraryDependencies ++= (if (priorTo2_13(scalaVersion.value))
+                               Seq("io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion)
+                             else Nil)
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
@@ -137,7 +141,10 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
   .jsSettings(
-    coverageExcludedPackages := "io.circe.derivation.*"
+    coverageExcludedPackages := "io.circe.derivation.*",
+    libraryDependencies ++= (if (priorTo2_13(scalaVersion.value))
+                               Seq("io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion)
+                             else Nil)
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 

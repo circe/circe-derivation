@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder, Json, ObjectEncoder }
+import io.circe.{ Decoder, Encoder, Json }
 import io.circe.examples.{ Bar, Baz, Foo, Qux }
 import io.circe.parser.decode
 import io.circe.syntax._
@@ -8,13 +8,13 @@ import io.circe.testing.CodecTests
 
 object NameTransformationSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase)
-  implicit val encodeFoo: ObjectEncoder[Foo] = deriveEncoder(renaming.snakeCase)
+  implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase)
   implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase)
-  implicit val encodeBar: ObjectEncoder[Bar] = deriveEncoder(renaming.snakeCase)
+  implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder(renaming.snakeCase)
   implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase)
-  implicit val encodeBaz: ObjectEncoder[Baz] = deriveEncoder(renaming.snakeCase)
+  implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase)
   implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] = deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"))
-  implicit def encodeQux[A: Encoder]: ObjectEncoder[Qux[A]] =
+  implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] =
     deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"))
 }
 
