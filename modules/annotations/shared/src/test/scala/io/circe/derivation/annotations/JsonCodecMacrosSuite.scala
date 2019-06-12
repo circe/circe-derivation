@@ -2,7 +2,7 @@ package io.circe.derivation.annotations
 
 import cats.instances.AllInstances
 import cats.kernel.Eq
-import io.circe.{Decoder, Encoder, ObjectEncoder}
+import io.circe.{ Decoder, Encoder }
 import io.circe.derivation.CirceSuite
 import io.circe.testing.{ ArbitraryInstances, CodecTests }
 import org.scalacheck.{ Arbitrary, Gen }
@@ -128,28 +128,28 @@ class JsonCodecMacrosSuite extends CirceSuite {
 //  checkLaws("Codec[Hierarchy]", CodecTests[Hierarchy].codec)
   checkLaws("Codec[SelfRecursiveWithOption]", CodecTests[SelfRecursiveWithOption].codec)
 
-  "@JsonCodec" should "provide ObjectEncoder instances" in {
-    ObjectEncoder[Simple]
-    ObjectEncoder[Single]
-    ObjectEncoder[Typed1[Int]]
-    ObjectEncoder[Typed2[Int, Long]]
-//    ObjectEncoder[Hierarchy]
-    ObjectEncoder[SelfRecursiveWithOption]
+  "@JsonCodec" should "provide Encoder.AsObject instances" in {
+    Encoder.AsObject[Simple]
+    Encoder.AsObject[Single]
+    Encoder.AsObject[Typed1[Int]]
+    Encoder.AsObject[Typed2[Int, Long]]
+//    Encoder.AsObject[Hierarchy]
+    Encoder.AsObject[SelfRecursiveWithOption]
   }
 
   "@JsonCodec(config = Configuration.default)" should "create both encoder and decoder" in {
     @JsonCodec case class CaseClass1(fooCamel: String, barCamel: Int)
-    ObjectEncoder[CaseClass1]
+    Encoder.AsObject[CaseClass1]
     Decoder[CaseClass1]
     Encoder[CaseClass1]
 
     @JsonCodec(Configuration.default) case class CaseClass2(fooCamel: String, barCamel: Int)
-    ObjectEncoder[CaseClass2]
+    Encoder.AsObject[CaseClass2]
     Decoder[CaseClass2]
     Encoder[CaseClass2]
 
     @JsonCodec(config = Configuration.default) case class CaseClass3(fooCamel: String, barCamel: Int)
-    ObjectEncoder[CaseClass3]
+    Encoder.AsObject[CaseClass3]
     Decoder[CaseClass3]
     Encoder[CaseClass3]
   }

@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder, ObjectEncoder }
+import io.circe.{ Decoder, Encoder }
 import scala.reflect.macros.blackbox
 
 class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
@@ -148,7 +148,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     """
 
   def materializeDecoder[T: c.WeakTypeTag]: c.Expr[Decoder[T]] = materializeDecoderImpl[T](None)
-  def materializeEncoder[T: c.WeakTypeTag]: c.Expr[ObjectEncoder[T]] = materializeEncoderImpl[T](None)
+  def materializeEncoder[T: c.WeakTypeTag]: c.Expr[Encoder.AsObject[T]] = materializeEncoderImpl[T](None)
 
   def materializeDecoderWithNameTransformation[T: c.WeakTypeTag](
     nameTransformation: c.Expr[String => String]
@@ -156,7 +156,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   def materializeEncoderWithNameTransformation[T: c.WeakTypeTag](
     nameTransformation: c.Expr[String => String]
-  ): c.Expr[ObjectEncoder[T]] = materializeEncoderImpl[T](Some(nameTransformation))
+  ): c.Expr[Encoder.AsObject[T]] = materializeEncoderImpl[T](Some(nameTransformation))
 
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
     nameTransformation: Option[c.Expr[String => String]]
@@ -219,7 +219,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val (results: List[Tree], resultNames: List[TermName]) = reversed.reverse.map {
           case (member, resultName) => (
             q"""
-              val $resultName: _root_.io.circe.AccumulatingDecoder.Result[${ member.tpe }] =
+              val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${ member.tpe }] =
                 ${ repr.decoder(member.tpe).name }.tryDecodeAccumulating(
                   c.downField(${ transformName(member.decodedName) })
                 )
@@ -260,7 +260,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = $result
 
               private[this] def errors(
-                result: _root_.io.circe.AccumulatingDecoder.Result[_]
+                result: _root_.io.circe.Decoder.AccumulatingResult[_]
               ): _root_.scala.List[_root_.io.circe.DecodingFailure] = result match {
                 case _root_.cats.data.Validated.Valid(_)   => _root_.scala.Nil
                 case _root_.cats.data.Validated.Invalid(e) => e.toList
@@ -268,7 +268,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
               final override def decodeAccumulating(
                 c: _root_.io.circe.HCursor
-              ): _root_.io.circe.AccumulatingDecoder.Result[$tpe] = $resultAccumulating
+              ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = $resultAccumulating
             }
           """
         )
@@ -278,7 +278,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   private[this] def materializeEncoderImpl[T: c.WeakTypeTag](
     nameTransformation: Option[c.Expr[String => String]]
-  ): c.Expr[ObjectEncoder[T]] = {
+  ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree = nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
@@ -307,9 +307,9 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           }
       }
 
-      c.Expr[ObjectEncoder[T]](
+      c.Expr[Encoder.AsObject[T]](
         q"""
-          new _root_.io.circe.ObjectEncoder[$tpe] {
+          new _root_.io.circe.Encoder.AsObject[$tpe] {
             ..$instanceDefs
 
             final def encodeObject(a: $tpe): _root_.io.circe.JsonObject =
