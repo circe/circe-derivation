@@ -106,9 +106,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
   )
   .jsSettings(
     coverageExcludedPackages := "io.circe.derivation.*",
-    libraryDependencies ++= (if (priorTo2_13(scalaVersion.value))
-                               Seq("io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion)
-                             else Nil)
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
@@ -142,9 +140,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
   )
   .jsSettings(
     coverageExcludedPackages := "io.circe.derivation.*",
-    libraryDependencies ++= (if (priorTo2_13(scalaVersion.value))
-                               Seq("io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion)
-                             else Nil)
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
