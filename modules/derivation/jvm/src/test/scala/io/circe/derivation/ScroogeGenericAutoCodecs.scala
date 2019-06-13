@@ -2,10 +2,7 @@ package io.circe.derivation
 
 import io.circe.{ Decoder, Encoder }
 import io.circe.examples.scrooge._
-import io.circe.generic.semiauto.{
-  deriveDecoder => genericDeriveDecoder,
-  deriveEncoder => genericDeriveEncoder
-}
+import io.circe.generic.semiauto.{ deriveDecoder => genericDeriveDecoder, deriveEncoder => genericDeriveEncoder }
 import com.stripe.scrooge.shapes._
 
 object ScroogeGenericAutoCodecs {

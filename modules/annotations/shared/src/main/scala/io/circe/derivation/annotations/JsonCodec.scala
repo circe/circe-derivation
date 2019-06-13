@@ -22,23 +22,22 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     case List(clsDef: ClassDef) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
-       object ${ clsDef.name.toTermName } {
-         ..${ codec(clsDef) }
+       object ${clsDef.name.toTermName} {
+         ..${codec(clsDef)}
        }
        """
     case List(
-    clsDef: ClassDef,
-    q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
-    ) if isCaseClassOrSealed(clsDef) =>
+        clsDef: ClassDef,
+        q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
+        ) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
        object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
          ..$objDefs
-         ..${ codec(clsDef) }
+         ..${codec(clsDef)}
        }
        """
-    case _ => c.abort(c.enclosingPosition,
-      "Invalid annotation target: must be a case class or a sealed trait/class")
+    case _ => c.abort(c.enclosingPosition, "Invalid annotation target: must be a case class or a sealed trait/class")
   }
 
   private[this] val DecoderClass = typeOf[Decoder[_]].typeSymbol.asType
@@ -48,7 +47,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   private[this] val macroName: Tree = {
     c.prefix.tree match {
       case Apply(Select(New(name), _), _) => name
-      case _ => c.abort(c.enclosingPosition, "Unexpected macro application")
+      case _                              => c.abort(c.enclosingPosition, "Unexpected macro application")
     }
   }
 
@@ -57,10 +56,10 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
 
   private[this] val (codecType: JsonCodecType, config: Tree) = {
     c.prefix.tree match {
-      case q"new ${`macroName`}()" => (JsonCodecType.Both, defaultCfg)
-      case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
-      case q"new ${`macroName`}($cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
-      case _ => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
+      case q"new ${`macroName` }()"              => (JsonCodecType.Both, defaultCfg)
+      case q"new ${`macroName` }(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
+      case q"new ${`macroName` }($cfg)"          => (codecFrom(c.typecheck(cfg)), cfg)
+      case _                                     => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
     }
   }
 
@@ -116,7 +115,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       )
     }
     codecType match {
-      case JsonCodecType.Both => List(decoder, encoder)
+      case JsonCodecType.Both       => List(decoder, encoder)
       case JsonCodecType.DecodeOnly => List(decoder)
       case JsonCodecType.EncodeOnly => List(encoder)
     }

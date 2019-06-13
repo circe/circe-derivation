@@ -7,8 +7,7 @@ import io.circe.derivation.CirceSuite
 import io.circe.testing.{ ArbitraryInstances, CodecTests }
 import org.scalacheck.{ Arbitrary, Gen }
 
-package object jsoncodecmacrossuiteaux extends AnyRef
-  with AllInstances with ArbitraryInstances
+package object jsoncodecmacrossuiteaux extends AnyRef with AllInstances with ArbitraryInstances
 
 package jsoncodecmacrossuiteaux {
 
@@ -64,8 +63,7 @@ package jsoncodecmacrossuiteaux {
   object Typed2 {
     implicit def eqTyped2[A: Eq, B: Eq]: Eq[Typed2[A, B]] = Eq.by(t => (t.i, t.a, t.b, t.j))
 
-    implicit def arbitraryTyped2[A, B](implicit A: Arbitrary[A], B: Arbitrary[B])
-    : Arbitrary[Typed2[A, B]] =
+    implicit def arbitraryTyped2[A, B](implicit A: Arbitrary[A], B: Arbitrary[B]): Arbitrary[Typed2[A, B]] =
       Arbitrary(
         for {
           i <- Arbitrary.arbitrary[Int]
@@ -109,9 +107,12 @@ package jsoncodecmacrossuiteaux {
     implicit val eqSelfRecursiveWithOption: Eq[SelfRecursiveWithOption] = Eq.fromUniversalEquals
 
     private def atDepth(depth: Int): Gen[SelfRecursiveWithOption] = if (depth < 3)
-      Arbitrary.arbitrary[Option[SelfRecursiveWithOption]].map(
-        SelfRecursiveWithOption(_)
-      ) else Gen.const(SelfRecursiveWithOption(None))
+      Arbitrary
+        .arbitrary[Option[SelfRecursiveWithOption]]
+        .map(
+          SelfRecursiveWithOption(_)
+        )
+    else Gen.const(SelfRecursiveWithOption(None))
 
     implicit val arbitrarySelfRecursiveWithOption: Arbitrary[SelfRecursiveWithOption] =
       Arbitrary(atDepth(0))
