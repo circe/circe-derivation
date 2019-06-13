@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{ Codec, Decoder, Encoder }
+import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples._
 import io.circe.testing.CodecTests
 
@@ -40,6 +40,22 @@ object DerivationSuiteCodecs extends Serializable {
 
 class DerivationSuite extends CirceSuite {
   import DerivationSuiteCodecs._
+
+  "deriveDecoder" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
+    case class EmptyCaseClass()
+
+    val decodeEmptyCaseClass: Decoder[EmptyCaseClass] = deriveDecoder
+
+    assert(decodeEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+  }
+
+  "deriveCodec" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
+    case class EmptyCaseClass()
+
+    val codecForEmptyCaseClass: Codec[EmptyCaseClass] = deriveCodec
+
+    assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+  }
 
   checkLaws("Codec[Foo]", CodecTests[Foo].codec)
   checkLaws("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
