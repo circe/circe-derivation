@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder, Json }
+import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples.{ Bar, Baz, Foo, Qux }
 import io.circe.parser.decode
 import io.circe.syntax._
@@ -9,13 +9,22 @@ import io.circe.testing.CodecTests
 object NameTransformationSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase)
   implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase)
+  val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase)
+
   implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase)
   implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder(renaming.snakeCase)
+  val codecForBar: Codec.AsObject[Bar] = deriveCodec(renaming.snakeCase)
+
   implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase)
   implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase)
+  val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase)
+
   implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] = deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"))
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] =
     deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"))
+  def codecForQux[A: Decoder: Encoder]: Codec.AsObject[Qux[A]] = deriveCodec(
+    renaming.replaceWith("aa" -> "1", "bb" -> "2")
+  )
 }
 
 class NameTransformationSuite extends CirceSuite {
@@ -23,11 +32,56 @@ class NameTransformationSuite extends CirceSuite {
   import NameTransformationSuiteCodecs._
 
   checkLaws("Codec[Foo]", CodecTests[Foo].codec)
+  checkLaws("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
   checkLaws("Codec[Bar]", CodecTests[Bar].codec)
+  checkLaws("Codec[Bar] via Codec", CodecTests[Bar](codecForBar, codecForBar).codec)
   checkLaws("Codec[Baz]", CodecTests[Baz].codec)
+  checkLaws("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
   checkLaws("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
+  checkLaws("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
 
   checkLaws("Codec[User]", CodecTests[User].codec)
+  checkLaws("Codec[User] via Codec", CodecTests[User](User.codecForUser, User.codecForUser).codec)
+
+  checkLaws(
+    "CodecAgreementWithCodec[Foo]",
+    CodecAgreementTests[Foo](
+      codecForFoo,
+      codecForFoo,
+      decodeFoo,
+      encodeFoo
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreementWithCodec[Bar]",
+    CodecAgreementTests[Bar](
+      codecForBar,
+      codecForBar,
+      decodeBar,
+      encodeBar
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreementWithCodec[Baz]",
+    CodecAgreementTests[Baz](
+      codecForBaz,
+      codecForBaz,
+      decodeBaz,
+      encodeBaz
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreementWithCodec[Qux[Baz]]",
+    CodecAgreementTests[Qux[Baz]](
+      codecForQux,
+      codecForQux,
+      decodeQux,
+      encodeQux
+    ).codecAgreement
+  )
 
   "deriveEncoder" should "properly transform member names" in forAll { (user: User) =>
     val expected = Json.obj(

@@ -1,7 +1,7 @@
 package io.circe.derivation
 
 import cats.kernel.Eq
-import io.circe.{ Decoder, Encoder }
+import io.circe.{ Codec, Decoder, Encoder }
 import org.scalacheck.Arbitrary
 
 object NameTransformationExample {
@@ -21,6 +21,7 @@ object NameTransformationExample {
 
     implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase)
     implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase)
+    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase)
   }
 
   case class Role(title: String)
