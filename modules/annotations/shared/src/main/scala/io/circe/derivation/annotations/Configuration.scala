@@ -3,13 +3,13 @@ package io.circe.derivation.annotations
 import io.circe.derivation.renaming
 
 /**
-  * Configuration allowing customisation of the JSON produced when encoding, or
-  * expected when decoding. Can be passed to the [[JsonCodec]] annotation to
-  * allow customisation of derivation.
-  *
-  * The configuration also determines if either *both* encoder and decoder are
-  * derived - or if only one of them will be.
-  */
+ * Configuration allowing customisation of the JSON produced when encoding, or
+ * expected when decoding. Can be passed to the [[JsonCodec]] annotation to
+ * allow customisation of derivation.
+ *
+ * The configuration also determines if either *both* encoder and decoder are
+ * derived - or if only one of them will be.
+ */
 sealed trait Configuration {
 
   type Config <: Configuration

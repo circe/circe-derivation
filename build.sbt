@@ -1,4 +1,4 @@
-import sbtcrossproject.{crossProject, CrossType}
+import sbtcrossproject.{ crossProject, CrossType }
 import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 
@@ -6,7 +6,8 @@ organization in ThisBuild := "io.circe"
 
 val compilerOptions = Seq(
   "-deprecation",
-  "-encoding", "UTF-8",
+  "-encoding",
+  "UTF-8",
   "-feature",
   "-language:existentials",
   "-language:higherKinds",
@@ -26,18 +27,21 @@ def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
     case Some((2, minor)) if minor < 13 => true
     case _                              => false
-}
+  }
 
 val baseSettings = Seq(
   scalacOptions ++= compilerOptions,
   scalacOptions ++= (
-    if (priorTo2_13(scalaVersion.value)) Seq(
-      "-Xfuture",
-      "-Yno-adapted-args",
-      "-Ywarn-unused-import"
-    ) else Seq(
-      "-Ywarn-unused:imports"
-    )
+    if (priorTo2_13(scalaVersion.value))
+      Seq(
+        "-Xfuture",
+        "-Yno-adapted-args",
+        "-Ywarn-unused-import"
+      )
+    else
+      Seq(
+        "-Ywarn-unused:imports"
+      )
   ),
   scalacOptions in (Compile, console) ~= {
     _.filterNot(Set("-Ywarn-unused-import"))
@@ -55,7 +59,8 @@ val allSettings = baseSettings ++ publishSettings
 
 val docMappingsApiDir = settingKey[String]("Subdirectory in site target directory for API docs")
 
-val root = project.in(file("."))
+val root = project
+  .in(file("."))
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -65,11 +70,15 @@ val root = project.in(file("."))
     )
   )
   .aggregate(
-    derivationJVM, derivationJS,
-    annotationsJVM, annotationsJS,
+    derivationJVM,
+    derivationJS,
+    annotationsJVM,
+    annotationsJS,
     examplesScrooge,
-    examplesDerivationJVM, examplesDerivationJS,
-    examplesGenericJVM, examplesGenericJS
+    examplesDerivationJVM,
+    examplesDerivationJS,
+    examplesGenericJVM,
+    examplesGenericJS
   )
   .dependsOn(derivationJVM)
 
@@ -92,14 +101,16 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP8" % Test
     ),
     ghpagesNoJekyll := true,
-    docMappingsApiDir := "api",
+    docMappingsApiDir := "api"
   )
   .dependsOn(examples % Test)
   .jvmSettings(
     libraryDependencies ++= (
-      if (priorTo2_13(scalaVersion.value)) Seq(
-        "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
-      ) else Nil
+      if (priorTo2_13(scalaVersion.value))
+        Seq(
+          "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
+        )
+      else Nil
     ),
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
@@ -125,9 +136,11 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
     libraryDependencies ++= (
-      if (priorTo2_13(scalaVersion.value)) Seq(
-        compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
-      ) else Nil
+      if (priorTo2_13(scalaVersion.value))
+        Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
+        )
+      else Nil
     ),
     scalacOptions ++= (
       if (priorTo2_13(scalaVersion.value)) Nil else Seq("-Ymacro-annotations")
@@ -163,7 +176,8 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 
-lazy val examplesScrooge = project.in(file("examples/scrooge"))
+lazy val examplesScrooge = project
+  .in(file("examples/scrooge"))
   .settings(allSettings)
   .settings(noPublishSettings)
   .settings(
@@ -172,18 +186,23 @@ lazy val examplesScrooge = project.in(file("examples/scrooge"))
       "org.typelevel" %% "cats-core" % catsVersion
     ),
     libraryDependencies ++= (
-      if (priorTo2_13(scalaVersion.value)) Seq(
-        "com.twitter" %% "scrooge-core" % "19.4.0",
-        "org.apache.thrift" % "libthrift" % "0.10.0"
-      ) else Nil
+      if (priorTo2_13(scalaVersion.value))
+        Seq(
+          "com.twitter" %% "scrooge-core" % "19.4.0",
+          "org.apache.thrift" % "libthrift" % "0.10.0"
+        )
+      else Nil
     ),
     scroogeThriftSourceFolder in Compile := (
-      if (priorTo2_13(scalaVersion.value)) (
-        baseDirectory.value / "src" / "main" / "thrift"
-      ) else (
-        // A hack to avoid generating Scrooge source on 2.13 for now.
-        baseDirectory.value / "_none_"
-      )
+      if (priorTo2_13(scalaVersion.value))
+        (
+          baseDirectory.value / "src" / "main" / "thrift"
+        )
+      else
+        (
+          // A hack to avoid generating Scrooge source on 2.13 for now.
+          baseDirectory.value / "_none_"
+        )
     )
   )
 
@@ -215,9 +234,11 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
   .jvmSettings(
     libraryDependencies ++= (
-      if (priorTo2_13(scalaVersion.value)) Seq(
-        "com.stripe" %% "scrooge-shapes" % "0.1.0"
-      ) else Nil
+      if (priorTo2_13(scalaVersion.value))
+        Seq(
+          "com.stripe" %% "scrooge-shapes" % "0.1.0"
+        )
+      else Nil
     )
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
@@ -239,13 +260,15 @@ lazy val publishSettings = Seq(
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
   publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
+  pomIncludeRepository := { _ =>
+    false
+  },
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
   autoAPIMappings := true,
   apiURL := Some(url("https://circe.github.io/circe-derivation/api/")),
@@ -271,12 +294,11 @@ lazy val publishSettings = Seq(
 
         override def transform(node: XmlNode): XmlNodeSeq = node match {
           case elem: Elem if isTestScope(elem) => Nil
-          case _ => node
+          case _                               => node
         }
       }
     ).transform(node).head
   }
-
 )
 
 credentials ++= (
