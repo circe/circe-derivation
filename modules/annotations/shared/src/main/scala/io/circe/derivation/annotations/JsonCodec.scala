@@ -1,6 +1,6 @@
 package io.circe.derivation.annotations
 
-import io.circe.{ Decoder, Encoder }
+import io.circe.{ Codec, Decoder, Encoder }
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -23,7 +23,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       q"""
        $clsDef
        object ${ clsDef.name.toTermName } {
-         ..${ codec(clsDef) }
+         ${ codec(clsDef) }
        }
        """
     case List(
@@ -34,7 +34,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
        $clsDef
        object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
          ..$objDefs
-         ..${ codec(clsDef) }
+         ${ codec(clsDef) }
        }
        """
     case _ => c.abort(c.enclosingPosition,
@@ -43,7 +43,8 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
 
   private[this] val DecoderClass = typeOf[Decoder[_]].typeSymbol.asType
   private[this] val EncoderClass = typeOf[Encoder[_]].typeSymbol.asType
-  private[this] val EncoderAsObjectClass = typeOf[Encoder.AsObject[_]].typeSymbol.asType
+  private[this] val AsObjectEncoderClass = typeOf[Encoder.AsObject[_]].typeSymbol.asType
+  private[this] val AsObjectCodecClass = typeOf[Codec.AsObject[_]].typeSymbol.asType
 
   private[this] val macroName: Tree = {
     c.prefix.tree match {
@@ -75,7 +76,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       case t =>
         c.warning(
           c.enclosingPosition,
-          "Couldn't determine type of configuration - will produce both encoder and decoder"
+          "Couldn't determine type of configuration; will produce both encoder and decoder"
         )
         JsonCodecType.Both
     }
@@ -83,42 +84,49 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   private[this] val cfgNameTransformation =
     q"$config.transformMemberNames"
 
-  private[this] def codec(clsDef: ClassDef): List[Tree] = {
+  private[this] def codec(clsDef: ClassDef): Tree = {
     val tpname = clsDef.name
     val tparams = clsDef.tparams
-    val decodeNme = TermName("decode" + tpname.decodedName)
-    val encodeNme = TermName("encode" + tpname.decodedName)
-    val (decoder, encoder) = if (tparams.isEmpty) {
+    val decoderName = TermName("decode" + tpname.decodedName)
+    val encoderName = TermName("encode" + tpname.decodedName)
+    val codecName = TermName("codecFor" + tpname.decodedName)
+    val (decoder, encoder, codec) = if (tparams.isEmpty) {
       val Type = tpname
       (
-        q"""implicit val $decodeNme: $DecoderClass[$Type] =
+        q"""implicit val $decoderName: $DecoderClass[$Type] =
             _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation)""",
-        q"""implicit val $encodeNme: $EncoderAsObjectClass[$Type] =
-            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)"""
+        q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
+            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)""",
+        q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation)"""
       )
     } else {
       val tparamNames = tparams.map(_.name)
-      def mkImplicitParams(typeSymbol: TypeSymbol) =
+      def mkImplicitParams(prefix: String, typeSymbol: TypeSymbol) =
         tparamNames.zipWithIndex.map {
           case (tparamName, i) =>
-            val paramName = TermName(s"instance$i")
+            val paramName = TermName(s"$prefix$i")
             val paramType = tq"$typeSymbol[$tparamName]"
             q"$paramName: $paramType"
         }
-      val decodeParams = mkImplicitParams(DecoderClass)
-      val encodeParams = mkImplicitParams(EncoderClass)
+      val decodeParams = mkImplicitParams("decode", DecoderClass)
+      val encodeParams = mkImplicitParams("encode", EncoderClass)
       val Type = tq"$tpname[..$tparamNames]"
       (
-        q"""implicit def $decodeNme[..$tparams](implicit ..$decodeParams): $DecoderClass[$Type] =
+        q"""implicit def $decoderName[..$tparams](implicit ..$decodeParams): $DecoderClass[$Type] =
            _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation)""",
-        q"""implicit def $encodeNme[..$tparams](implicit ..$encodeParams): $EncoderAsObjectClass[$Type] =
-           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)"""
+        q"""implicit def $encoderName[..$tparams](implicit ..$encodeParams): $AsObjectEncoderClass[$Type] =
+           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)""",
+        q"""implicit def $codecName[..$tparams](implicit
+            ..${decodeParams ++ encodeParams}
+          ): $AsObjectCodecClass[$Type] =
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation)"""
       )
     }
     codecType match {
-      case JsonCodecType.Both => List(decoder, encoder)
-      case JsonCodecType.DecodeOnly => List(decoder)
-      case JsonCodecType.EncodeOnly => List(encoder)
+      case JsonCodecType.Both => codec
+      case JsonCodecType.DecodeOnly => decoder
+      case JsonCodecType.EncodeOnly => encoder
     }
   }
 }

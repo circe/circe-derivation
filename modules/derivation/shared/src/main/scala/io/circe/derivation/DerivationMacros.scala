@@ -1,6 +1,6 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder }
+import io.circe.{ Codec, Decoder, Encoder }
 import scala.reflect.macros.blackbox
 
 class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
@@ -149,6 +149,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   def materializeDecoder[T: c.WeakTypeTag]: c.Expr[Decoder[T]] = materializeDecoderImpl[T](None)
   def materializeEncoder[T: c.WeakTypeTag]: c.Expr[Encoder.AsObject[T]] = materializeEncoderImpl[T](None)
+  def materializeCodec[T: c.WeakTypeTag]: c.Expr[Codec.AsObject[T]] = materializeCodecImpl[T](None)
 
   def materializeDecoderWithNameTransformation[T: c.WeakTypeTag](
     nameTransformation: c.Expr[String => String]
@@ -157,6 +158,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   def materializeEncoderWithNameTransformation[T: c.WeakTypeTag](
     nameTransformation: c.Expr[String => String]
   ): c.Expr[Encoder.AsObject[T]] = materializeEncoderImpl[T](Some(nameTransformation))
+
+  def materializeCodecWithNameTransformation[T: c.WeakTypeTag](
+    nameTransformation: c.Expr[String => String]
+  ): c.Expr[Codec.AsObject[T]] = materializeCodecImpl[T](Some(nameTransformation))
 
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
     nameTransformation: Option[c.Expr[String => String]]
@@ -314,6 +319,147 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
             final def encodeObject(a: $tpe): _root_.io.circe.JsonObject =
               _root_.io.circe.JsonObject.fromIterable($fields)
+          }
+        """
+      )
+    }
+  }
+
+  private[this] def materializeCodecImpl[T: c.WeakTypeTag](
+    nameTransformation: Option[c.Expr[String => String]]
+  ): c.Expr[Codec.AsObject[T]] = {
+    val tpe = weakTypeOf[T]
+
+    def transformName(name: String): Tree = nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
+
+    productRepr(tpe).fold(fail(tpe)) { repr =>
+      val encoderInstanceDefs: List[Tree] = repr.instances.map(_.encoder).map {
+        case instance @ Instance(_, instanceType, name) =>
+          val resolved = instance.resolve()
+
+          if (checkEncoderValSafety(resolved)) {
+            q"private[this] val $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
+          } else {
+            q"private[this] def $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
+          }
+      }
+
+      val fields: List[Tree] = repr.paramLists.flatten.map {
+        case Member(name, decodedName, tpe) =>
+          repr.encoder(tpe) match {
+            case Instance(_, _, instanceName) => q"""
+              _root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
+                ${ transformName(decodedName) },
+                this.$instanceName.apply(a.$name)
+              )
+            """
+          }
+      }
+
+        val decoderInstanceDefs: List[Tree] = repr.instances.map(_.decoder).map {
+          case instance @ Instance(_, instanceType, name) =>
+            val resolved = instance.resolve()
+
+            if (checkDecoderValSafety(resolved)) {
+              q"private[this] val $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
+            } else {
+              q"private[this] def $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
+            }
+        }
+
+        val reversed = repr.paramListsWithNames.flatten.reverse
+
+        def decode(member: Member): Tree =
+          q"this.${ repr.decoder(member.tpe).name }.tryDecode(c.downField(${ transformName(member.decodedName) }))"
+
+        val last: Tree = q"""
+          {
+            val $resName: _root_.io.circe.Decoder.Result[${ reversed.head._1.tpe }] =
+              ${ decode(reversed.head._1) }
+
+            if ($resName.isRight) {
+              val ${ reversed.head._2 }: ${ reversed.head._1.tpe } =
+                ${ extractFromRight(resName, reversed.head._1.tpe) }
+
+              new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](
+                ${ repr.instantiate }
+              ): _root_.io.circe.Decoder.Result[$tpe]
+            } else ${ castLeft(resName, tpe) }
+          }
+        """
+
+        val result: Tree = reversed.tail.foldLeft(last) {
+          case (acc, (member @ Member(_, _, memberType), resultName)) => q"""
+            {
+              val $resName: _root_.io.circe.Decoder.Result[$memberType] = ${ decode(member) }
+
+              if ($resName.isRight) {
+                val $resultName: $memberType = ${ extractFromRight(resName, memberType) }
+
+                $acc
+              } else ${ castLeft(resName, tpe) }
+            }
+          """
+        }
+
+        val (results: List[Tree], resultNames: List[TermName]) = reversed.reverse.map {
+          case (member, resultName) => (
+            q"""
+              val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${ member.tpe }] =
+                ${ repr.decoder(member.tpe).name }.tryDecodeAccumulating(
+                  c.downField(${ transformName(member.decodedName) })
+                )
+            """,
+            resultName
+          )
+        }.unzip
+
+        val resultErrors: List[Tree] = resultNames.map { resultName =>
+          q"errors($resultName)"
+        }
+
+        val resultAccumulating: Tree = q"""
+          {
+            ..$results
+
+            val dfs: _root_.scala.List[_root_.io.circe.DecodingFailure] = List(..$resultErrors).flatten
+
+            if (dfs.isEmpty) {
+              _root_.cats.data.Validated.valid[
+                _root_.cats.data.NonEmptyList[_root_.io.circe.DecodingFailure],
+                $tpe
+              ](${ repr.instantiateAccumulating })
+            } else {
+              _root_.cats.data.Validated.invalid[
+                _root_.cats.data.NonEmptyList[_root_.io.circe.DecodingFailure],
+                $tpe
+              ](_root_.cats.data.NonEmptyList.fromListUnsafe[_root_.io.circe.DecodingFailure](dfs))
+            }
+          }
+        """
+
+
+      c.Expr[Codec.AsObject[T]](
+        q"""
+          new _root_.io.circe.Codec.AsObject[$tpe] {
+            ..$encoderInstanceDefs
+            ..$decoderInstanceDefs
+
+            final def encodeObject(a: $tpe): _root_.io.circe.JsonObject =
+              _root_.io.circe.JsonObject.fromIterable($fields)
+
+            final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = $result
+
+            private[this] def errors(
+              result: _root_.io.circe.Decoder.AccumulatingResult[_]
+            ): _root_.scala.List[_root_.io.circe.DecodingFailure] = result match {
+              case _root_.cats.data.Validated.Valid(_)   => _root_.scala.Nil
+              case _root_.cats.data.Validated.Invalid(e) => e.toList
+            }
+
+            final override def decodeAccumulating(
+              c: _root_.io.circe.HCursor
+            ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = $resultAccumulating
           }
         """
       )

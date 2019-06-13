@@ -1,21 +1,30 @@
 package io.circe.derivation
 
-import io.circe.{ Decoder, Encoder }
+import io.circe.{ Codec, Decoder, Encoder }
 import io.circe.examples._
 import io.circe.testing.CodecTests
 
 object DerivationSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder
   implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder
+  val codecForFoo: Codec.AsObject[Foo] = deriveCodec
+
   implicit val decodeBar: Decoder[Bar] = deriveDecoder
   implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder
+  val codecForBar: Codec.AsObject[Bar] = deriveCodec
+
   implicit val decodeBaz: Decoder[Baz] = deriveDecoder
   implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder
+  val codecForBaz: Codec.AsObject[Baz] = deriveCodec
+
   implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] = deriveDecoder
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] = deriveEncoder
+  def codecForQux[A: Encoder: Decoder]: Codec.AsObject[Qux[A]] = deriveCodec
 
   implicit val decodeMultiParamListClass: Decoder[MultiParamListClass] = deriveDecoder
   implicit val encodeMultiParamListClass: Encoder[MultiParamListClass] = deriveEncoder
+  val codecForMultiParamListClass: Codec[MultiParamListClass] = deriveCodec
+
   implicit val decodeSimpleClass: Decoder[SimpleClass] = deriveDecoder
   implicit val encodeSimpleClass: Encoder[SimpleClass] = deriveEncoder
   implicit val decodeCustomApplyParamNamesClass: Decoder[CustomApplyParamNamesClass] = deriveDecoder
