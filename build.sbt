@@ -1,4 +1,4 @@
-import sbtcrossproject.{ crossProject, CrossType }
+import sbtcrossproject.{ CrossType, crossProject }
 import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 
@@ -138,7 +138,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value))
         Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.patch)
+          compilerPlugin(("org.scalamacros" % "paradise" % paradiseVersion).cross(CrossVersion.patch))
         )
       else Nil
     ),
@@ -266,9 +266,9 @@ lazy val publishSettings = Seq(
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
     else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
   },
   autoAPIMappings := true,
   apiURL := Some(url("https://circe.github.io/circe-derivation/api/")),
