@@ -114,6 +114,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
   .jsSettings(
+    coverageEnabled := false,
     coverageExcludedPackages := "io.circe.derivation.*",
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
@@ -150,6 +151,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
   )
   .jsSettings(
+    coverageEnabled := false,
     coverageExcludedPackages := "io.circe.derivation.*",
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
@@ -169,6 +171,9 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
       "org.scalacheck" %%% "scalacheck" % scalaCheckVersion,
       "org.typelevel" %%% "cats-core" % catsVersion
     )
+  )
+  .jsSettings(
+    coverageEnabled := false
   )
 
 lazy val examplesJVM = examples.jvm
@@ -214,6 +219,9 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
     coverageExcludedPackages := "io.circe.examples.*",
     wartremoverErrors ++= Warts.unsafe
   )
+  .jsSettings(
+    coverageEnabled := false
+  )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(derivation, examples)
 
@@ -238,6 +246,9 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
         )
       else Nil
     )
+  )
+  .jsSettings(
+    coverageEnabled := false
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(examples)
