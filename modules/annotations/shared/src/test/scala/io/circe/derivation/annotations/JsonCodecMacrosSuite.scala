@@ -199,4 +199,22 @@ class JsonCodecMacrosSuite extends CirceSuite {
     Encoder[CaseClassEncodeOnly]
     assertDoesNotCompile("Decoder[CaseClassEncodeOnly]")
   }
+
+  "@SnakeCaseJsonCodec" should "generate snake case JSON" in {
+    @SnakeCaseJsonCodec case class CaseClass(fooSnake: String, barSnake: Int)
+
+    val generatedJson = Encoder[CaseClass].apply(CaseClass("foo", 1)).noSpaces
+    val expectedJson = """{"foo_snake":"foo","bar_snake":1}"""
+
+    assertEq(expectedJson, generatedJson)
+  }
+
+  "@KebabCaseJsonCodec" should "generate kebab case JSON" in {
+    @KebabCaseJsonCodec case class CaseClass(fooKebab: String, barKebab: Int)
+
+    val generatedJson = Encoder[CaseClass].apply(CaseClass("foo", 1)).noSpaces
+    val expectedJson = """{"foo-kebab":"foo","bar-kebab":1}"""
+
+    assertEq(expectedJson, generatedJson)
+  }
 }
