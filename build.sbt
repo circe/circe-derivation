@@ -134,6 +134,10 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     description := "circe derivation annotations",
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api",
+    libraryDependencies ++= Seq(
+      scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
+      scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided
+    ),
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value))
         Seq(
