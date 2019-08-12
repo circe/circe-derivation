@@ -19,9 +19,9 @@ object NameTransformationExample {
 
     implicit val eqUser: Eq[User] = Eq.fromUniversalEquals
 
-    implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase)
-    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase)
-    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase)
+    implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase, Discriminator.default)
+    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, Discriminator.default)
+    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, Discriminator.default)
   }
 
   case class Role(title: String)
@@ -30,8 +30,8 @@ object NameTransformationExample {
     implicit val arbitraryRole: Arbitrary[Role] = Arbitrary(Arbitrary.arbitrary[String].map(Role(_)))
     implicit val eqRole: Eq[Role] = Eq.fromUniversalEquals
 
-    implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase)
-    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase)
+    implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase, Discriminator.default)
+    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, Discriminator.default)
   }
 
   case class Address(number: Int, street: String, city: String)
@@ -47,8 +47,11 @@ object NameTransformationExample {
 
     implicit val eqAddress: Eq[Address] = Eq.fromUniversalEquals
 
-    implicit val encodeAddress: Encoder[Address] = deriveEncoder(renaming.replaceWith("number" -> "#"))
-    implicit val decodeAddress: Decoder[Address] = deriveDecoder(renaming.replaceWith("number" -> "#"))
+    implicit val encodeAddress: Encoder[Address] = deriveEncoder(renaming.replaceWith("number" -> "#"),
+      Discriminator.default)
+    implicit val decodeAddress: Decoder[Address] = deriveDecoder(renaming.replaceWith("number" -> "#"),
+      true,
+      Discriminator.default)
   }
 
   case class Abc(a: String, b: String, c: String)
@@ -64,7 +67,7 @@ object NameTransformationExample {
 
     implicit val eqAbc: Eq[Abc] = Eq.fromUniversalEquals
 
-    implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x")
-    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x")
+    implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x", Discriminator.default)
+    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", true, Discriminator.default)
   }
 }
