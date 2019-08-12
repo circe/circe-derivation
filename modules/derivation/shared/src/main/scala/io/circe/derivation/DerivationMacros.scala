@@ -358,9 +358,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    // Valid only in macro!!
     val globalUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
-
 
     def transformName(name: String): Tree =
       nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
@@ -709,8 +707,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           case s: String if s.contains("withTypeDiscriminator") =>
             Discriminator.TypeDiscriminator
           case _ =>
-//          print(showRaw(tree))
-//          print(tree)
             Discriminator.default
         }
     }
