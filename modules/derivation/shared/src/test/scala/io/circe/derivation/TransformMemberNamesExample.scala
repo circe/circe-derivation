@@ -4,7 +4,7 @@ import cats.kernel.Eq
 import io.circe.{ Codec, Decoder, Encoder }
 import org.scalacheck.Arbitrary
 
-object NameTransformationExample {
+object TransformMemberNamesExample {
   case class User(firstName: String, lastName: String, role: Role, address: Address)
 
   object User {

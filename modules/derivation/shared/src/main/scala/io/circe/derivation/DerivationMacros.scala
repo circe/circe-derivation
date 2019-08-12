@@ -229,36 +229,36 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   def materializeCodec[T: c.WeakTypeTag]: c.Expr[Codec.AsObject[T]] =
     materializeCodecImpl[T](None, trueExpression, defaultDiscriminator)
 
-  def materializeDecoderWithNameTransformation[T: c.WeakTypeTag](
-    nameTransformation: c.Expr[String => String],
+  def materializeDecoderWithTransformMemberNames[T: c.WeakTypeTag](
+    transformMemberNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Decoder[T]] =
     materializeDecoderImpl[T](
-      Some(nameTransformation),
+      Some(transformMemberNames),
       useDefaults,
       discriminator
     )
 
-  def materializeEncoderWithNameTransformation[T: c.WeakTypeTag](
-    nameTransformation: c.Expr[String => String],
+  def materializeEncoderWithTransformMemberNames[T: c.WeakTypeTag](
+    transformMemberNames: c.Expr[String => String],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Encoder.AsObject[T]] =
-    materializeEncoderImpl[T](Some(nameTransformation), discriminator)
+    materializeEncoderImpl[T](Some(transformMemberNames), discriminator)
 
-  def materializeCodecWithNameTransformation[T: c.WeakTypeTag](
-    nameTransformation: c.Expr[String => String],
+  def materializeCodecWithTransformMemberNames[T: c.WeakTypeTag](
+    transformMemberNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Codec.AsObject[T]] =
     materializeCodecImpl[T](
-      Some(nameTransformation),
+      Some(transformMemberNames),
       useDefaults,
       discriminator
     )
 
   private[this] def materializeCodecImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Codec.AsObject[T]] = {
@@ -267,13 +267,13 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
       materializeCodecCaseClassImpl[T](
-        nameTransformation,
+        transformMemberNames,
         useDefaults,
         discriminator
       )
     } else {
       materializeCodecTraitImpl[T](
-        nameTransformation,
+        transformMemberNames,
         useDefaults,
         discriminator,
         subclasses
@@ -282,7 +282,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Decoder[T]] = {
@@ -290,10 +290,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
-      materializeDecoderCaseClassImpl[T](nameTransformation, useDefaults)
+      materializeDecoderCaseClassImpl[T](transformMemberNames, useDefaults)
     } else {
       materializeDecoderTraitImpl[T](
-        nameTransformation,
+        transformMemberNames,
         subclasses,
         discriminator
       )
@@ -301,7 +301,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeDecoderTraitImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     subclasses: Set[Symbol],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Decoder[T]] = {
@@ -353,7 +353,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeDecoderCaseClassImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
@@ -361,7 +361,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val globalUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
-      nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
+      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
@@ -507,11 +507,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   // we materialize case classes
   private[this] def materializeEncoderCaseClassImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]]
+    transformMemberNames: Option[c.Expr[String => String]]
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
+    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] = repr.instances.map(_.encoder).map {
@@ -602,7 +602,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   // we materialize trait
   private[this] def materializeEncoderTraitImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     subclasses: Set[Symbol],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Encoder.AsObject[T]] = {
@@ -643,17 +643,17 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeEncoderImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
     // we manage to work on ADT lets check the subclasses
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
-      materializeEncoderCaseClassImpl[T](nameTransformation)
+      materializeEncoderCaseClassImpl[T](transformMemberNames)
     } else {
       materializeEncoderTraitImpl[T](
-        nameTransformation,
+        transformMemberNames,
         subclasses,
         discriminator
       )
@@ -712,7 +712,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     }
 
   private[this] def materializeCodecTraitImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator],
     subclasses: Set[Symbol]
@@ -720,7 +720,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree =
-      nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
+      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
 
     expandDiscriminator(discriminator.tree) match {
       case _root_.io.circe.derivation.Discriminator.Embedded(fieldName) =>
@@ -817,7 +817,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     }
 
   private[this] def materializeCodecCaseClassImpl[T: c.WeakTypeTag](
-    nameTransformation: Option[c.Expr[String => String]],
+    transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Discriminator]
   ): c.Expr[Codec.AsObject[T]] = {
@@ -827,7 +827,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val globalUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
-      nameTransformation.fold[Tree](q"$name")(f => q"$f($name)")
+      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {

@@ -6,7 +6,7 @@ import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe.testing.CodecTests
 
-object NameTransformationSuiteCodecs extends Serializable {
+object TransformMemberNamesSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, true, Discriminator.default)
   implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase, Discriminator.default)
   val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase, true, Discriminator.default)
@@ -32,9 +32,9 @@ object NameTransformationSuiteCodecs extends Serializable {
   )
 }
 
-class NameTransformationSuite extends CirceSuite {
-  import NameTransformationExample._
-  import NameTransformationSuiteCodecs._
+class TransformMemberNamesSuite extends CirceSuite {
+  import TransformMemberNamesExample._
+  import TransformMemberNamesSuiteCodecs._
 
   checkLaws("Codec[Foo]", CodecTests[Foo].codec)
   checkLaws("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
