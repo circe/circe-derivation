@@ -17,9 +17,9 @@ val compilerOptions = Seq(
 )
 
 val catsVersion = "2.0.0-RC1"
-val circeVersion = "0.12.0-RC1"
+val circeVersion = "0.12.0-RC2"
 val paradiseVersion = "2.1.1"
-val previousCirceDerivationVersion = "0.12.0-M4"
+val previousCirceDerivationVersion = "0.12.0-RC1"
 val scalaCheckVersion = "1.14.0"
 val scalaJavaTimeVersion = "2.0.0-RC3"
 
