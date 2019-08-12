@@ -141,13 +141,13 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tq"$tpname[..$tparamNames]"
       (
         q"""implicit def $decoderName[..$tparams](implicit ..$decodeParams): $DecoderClass[$Type] =
-           _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation)""",
+           _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)""",
         q"""implicit def $encoderName[..$tparams](implicit ..$encodeParams): $AsObjectEncoderClass[$Type] =
-           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)""",
+           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation, $cfgDiscriminator)""",
         q"""implicit def $codecName[..$tparams](implicit
             ..${decodeParams ++ encodeParams}
           ): $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)"""
       )
     }
     codecType match {
