@@ -74,7 +74,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               case "JsonNoDefault" =>
                 noDefault = true
               case _ =>
-                // we skip other annotations
+              // we skip other annotations
             }
           case extra =>
             extra.toString().split('.').last match {
@@ -157,15 +157,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def membersFromCompanionApply(tpe: Type): Option[ProductRepr] = tpe.companion.decl(applyName) match {
     case NoSymbol => None
     case s =>
-        val defaults = caseClassFieldsDefaults(tpe)
+      val defaults = caseClassFieldsDefaults(tpe)
       s.alternatives.collect {
         case m: MethodSymbol => m.paramLists
       }.sortBy(-_.map(_.size).sum).headOption.map { applyParams =>
-          //We use zipwithIndex for gathering default field value if available
-          ProductReprWithApply(
-            tpe,
-            applyParams.map(_.zipWithIndex.map(Member.fromSymbol(tpe, defaults)))
-          )
+        //We use zipwithIndex for gathering default field value if available
+        ProductReprWithApply(
+          tpe,
+          applyParams.map(_.zipWithIndex.map(Member.fromSymbol(tpe, defaults)))
+        )
       }
   }
 
@@ -447,15 +447,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
         val (results: List[Tree], resultNames: List[TermName]) =
           reversed.reverse.map {
-          case (member, resultName) =>
-            (
-              q"""
+            case (member, resultName) =>
+              (
+                q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
                 ${accumulatingDecode(member)}
             """,
-              resultName
-            )
-        }.unzip
+                resultName
+              )
+          }.unzip
 
         val resultErrors: List[Tree] = resultNames.map { resultName =>
           q"errors($resultName)"
@@ -530,7 +530,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
       if (hasNoDefault) {
         // we manage default serialization
-      val fields: List[Tree] = repr.paramLists.flatten.map {
+        val fields: List[Tree] = repr.paramLists.flatten.map {
           case Member(
               name,
               decodedName,
@@ -539,7 +539,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               defaultValue,
               noSerializeDefault
               ) =>
-          repr.encoder(tpe) match {
+            repr.encoder(tpe) match {
               case Instance(_, _, instanceName) =>
                 val realName = keyName.getOrElse(transformName(decodedName))
 
@@ -583,11 +583,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
                 this.$instanceName.apply(a.$name)
               )
             """
-          }
-      }
+            }
+        }
 
-      c.Expr[Encoder.AsObject[T]](
-        q"""
+        c.Expr[Encoder.AsObject[T]](
+          q"""
           new _root_.io.circe.Encoder.AsObject[$tpe] {
             ..$instanceDefs
 
@@ -595,9 +595,9 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               _root_.io.circe.JsonObject.fromIterable($fields)
           }
         """
-      )
+        )
+      }
     }
-  }
   }
 
   // we materialize trait
@@ -739,7 +739,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           )}.asJson)"""
         }.toList
 
-
         val result = q"""
             new _root_.io.circe.Codec.AsObject[$tpe] {
                import io.circe.syntax._
@@ -801,20 +800,20 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   }
 
-  private[this] def extractUseDefaults(useDefaults:Tree):Boolean=
+  private[this] def extractUseDefaults(useDefaults: Tree): Boolean =
     useDefaults match {
-      case q"true " => true
+      case q"true "  => true
       case q"false " => false
       case q"io.circe.derivation.annotations.Configuration.default.useDefaults " =>
         true
-      case q"Configuration.default.useDefaults " => true
-      case q"Configuration.default.withSnakeCaseMemberNames.useDefaults " => true
+      case q"Configuration.default.useDefaults "                                                          => true
+      case q"Configuration.default.withSnakeCaseMemberNames.useDefaults "                                 => true
       case q"io.circe.derivation.annotations.Configuration.default.withSnakeCaseMemberNames.useDefaults " => true
-      case q"Configuration.default.withKebabCaseMemberNames.useDefaults " => true
+      case q"Configuration.default.withKebabCaseMemberNames.useDefaults "                                 => true
       case q"io.circe.derivation.annotations.Configuration.default.withKebabCaseMemberNames.useDefaults " => true
-      case q"Configuration.decodeOnly.useDefaults " => true
-      case q"io.circe.derivation.annotations.Configuration.decodeOnly.useDefaults " => true
-      case other if other.toString().endsWith(".useDefaults") => true // hack for namespaces
+      case q"Configuration.decodeOnly.useDefaults "                                                       => true
+      case q"io.circe.derivation.annotations.Configuration.decodeOnly.useDefaults "                       => true
+      case other if other.toString().endsWith(".useDefaults")                                             => true // hack for namespaces
     }
 
   private[this] def materializeCodecCaseClassImpl[T: c.WeakTypeTag](
@@ -860,8 +859,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               q"private[this] def $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
             }
         }
-
-
 
         // we manage default serialization
         val fields: List[Tree] = repr.paramLists.flatten.map {
@@ -967,15 +964,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
         val (results: List[Tree], resultNames: List[TermName]) =
           reversed.reverse.map {
-          case (member, resultName) =>
-            (
-              q"""
+            case (member, resultName) =>
+              (
+                q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
                 ${accumulatingDecode(member)}
             """,
-              resultName
-            )
-        }.unzip
+                resultName
+              )
+          }.unzip
 
         val resultErrors: List[Tree] = resultNames.map { resultName =>
           q"errors($resultName)"
