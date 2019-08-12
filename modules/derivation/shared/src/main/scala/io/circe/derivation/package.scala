@@ -8,22 +8,22 @@ package object derivation {
   final def deriveCodec[A]: Codec.AsObject[A] = macro DerivationMacros.materializeCodec[A]
 
   final def deriveDecoder[A](
-    nameTransformation: String => String,
+    transformMemberNames: String => String,
     useDefaults: Boolean,
     discriminator: Discriminator
   ): Decoder[A] =
-    macro DerivationMacros.materializeDecoderWithNameTransformation[A]
+    macro DerivationMacros.materializeDecoderWithTransformMemberNames[A]
 
   final def deriveEncoder[A](
-    nameTransformation: String => String,
+    transformMemberNames: String => String,
     discriminator: Discriminator
   ): Encoder.AsObject[A] =
-    macro DerivationMacros.materializeEncoderWithNameTransformation[A]
+    macro DerivationMacros.materializeEncoderWithTransformMemberNames[A]
 
   final def deriveCodec[A](
-    nameTransformation: String => String,
+    transformMemberNames: String => String,
     useDefaults: Boolean,
     discriminator: Discriminator
   ): Codec.AsObject[A] =
-    macro DerivationMacros.materializeCodecWithNameTransformation[A]
+    macro DerivationMacros.materializeCodecWithTransformMemberNames[A]
 }

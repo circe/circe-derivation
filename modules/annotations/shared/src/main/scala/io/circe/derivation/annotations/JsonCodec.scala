@@ -101,7 +101,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
         JsonCodecType.Both
     }
 
-  private[this] val cfgNameTransformation =
+  private[this] val cfgTransformMemberNames =
     q"$config.transformMemberNames"
   private[this] val cfgUseDefaults =
     q"$config.useDefaults"
@@ -121,11 +121,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tpname
       (
         q"""implicit val $decoderName: $DecoderClass[$Type] =
-            _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)""",
+            _root_.io.circe.derivation.deriveDecoder[$Type]($cfgTransformMemberNames, $cfgUseDefaults, $cfgDiscriminator)""",
         q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
-            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation, $cfgDiscriminator)""",
+            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgTransformMemberNames, $cfgDiscriminator)""",
         q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgTransformMemberNames, $cfgUseDefaults, $cfgDiscriminator)"""
       )
     } else {
       val tparamNames = tparams.map(_.name)
@@ -141,13 +141,13 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tq"$tpname[..$tparamNames]"
       (
         q"""implicit def $decoderName[..$tparams](implicit ..$decodeParams): $DecoderClass[$Type] =
-           _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)""",
+           _root_.io.circe.derivation.deriveDecoder[$Type]($cfgTransformMemberNames, $cfgUseDefaults, $cfgDiscriminator)""",
         q"""implicit def $encoderName[..$tparams](implicit ..$encodeParams): $AsObjectEncoderClass[$Type] =
-           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation, $cfgDiscriminator)""",
+           _root_.io.circe.derivation.deriveEncoder[$Type]($cfgTransformMemberNames, $cfgDiscriminator)""",
         q"""implicit def $codecName[..$tparams](implicit
             ..${decodeParams ++ encodeParams}
           ): $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgTransformMemberNames, $cfgUseDefaults, $cfgDiscriminator)"""
       )
     }
     codecType match {
