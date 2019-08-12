@@ -915,7 +915,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             q"""${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName)
             )"""
           }
-          //q"this.${ repr.decoder(member.tpe).name }.tryDecode(c.downField($realFieldName))"
         }
 
         val last: Tree = q"""
