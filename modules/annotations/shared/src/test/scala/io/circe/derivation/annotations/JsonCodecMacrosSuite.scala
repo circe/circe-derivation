@@ -76,28 +76,29 @@ package jsoncodecmacrossuiteaux {
 
   // Hierarchy
 
-//  @JsonCodec sealed trait Hierarchy
-//  final case class Hierarchy1(i: Int, s: String) extends Hierarchy
-//  final case class Hierarchy2(xs: List[String]) extends Hierarchy
-//  final case class Hierarchy3(s: Single, d: Double) extends Hierarchy
-//
-//  object Hierarchy {
-//    implicit val eqHierarchy: Eq[Hierarchy] = Eq.fromUniversalEquals
-//
-//    implicit val arbitraryHierarchy: Arbitrary[Hierarchy] = Arbitrary(
-//      Gen.oneOf(
-//        for {
-//          i <- Arbitrary.arbitrary[Int]
-//          s <- Arbitrary.arbitrary[String]
-//        } yield Hierarchy1(i, s),
-//        Gen.listOf(Arbitrary.arbitrary[String]).map(Hierarchy2.apply),
-//        for {
-//          s <- Arbitrary.arbitrary[Single]
-//          d <- Arbitrary.arbitrary[Double]
-//        } yield Hierarchy3(s, d)
-//      )
-//    )
-//  }
+  @JsonCodec
+  sealed trait Hierarchy
+  @JsonCodec final case class Hierarchy1(i: Int, s: String) extends Hierarchy
+  @JsonCodec final case class Hierarchy2(xs: List[String]) extends Hierarchy
+  @JsonCodec final case class Hierarchy3(s: Single, d: Double) extends Hierarchy
+
+  object Hierarchy {
+    implicit val eqHierarchy: Eq[Hierarchy] = Eq.fromUniversalEquals
+
+    implicit val arbitraryHierarchy: Arbitrary[Hierarchy] = Arbitrary(
+      Gen.oneOf(
+        for {
+          i <- Arbitrary.arbitrary[Int]
+          s <- Arbitrary.arbitrary[String]
+        } yield Hierarchy1(i, s),
+        Gen.listOf(Arbitrary.arbitrary[String]).map(Hierarchy2.apply),
+        for {
+          s <- Arbitrary.arbitrary[Single]
+          d <- Arbitrary.arbitrary[Double]
+        } yield Hierarchy3(s, d)
+      )
+    )
+  }
 
   // SelfRecursiveWithOption
 
@@ -126,8 +127,11 @@ class JsonCodecMacrosSuite extends CirceSuite {
   checkLaws("Codec[Single]", CodecTests[Single].codec)
   checkLaws("Codec[Typed1[Int]]", CodecTests[Typed1[Int]].codec)
   checkLaws("Codec[Typed2[Int, Long]]", CodecTests[Typed2[Int, Long]].codec)
-//  checkLaws("Codec[Hierarchy]", CodecTests[Hierarchy].codec)
-  checkLaws("Codec[SelfRecursiveWithOption]", CodecTests[SelfRecursiveWithOption].codec)
+  checkLaws("Codec[Hierarchy]", CodecTests[Hierarchy].codec)
+  checkLaws(
+    "Codec[SelfRecursiveWithOption]",
+    CodecTests[SelfRecursiveWithOption].codec
+  )
 
   "@JsonCodec" should "provide Encoder.AsObject instances" in {
     Encoder.AsObject[Simple]

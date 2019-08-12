@@ -87,11 +87,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
 
   private[this] def codecFrom(tree: Tree): JsonCodecType =
     tree.tpe.dealias match {
-      case t if t <:< typeOf[Configuration.Codec] =>
+      case t if t == typeOf[Configuration.Codec] =>
         JsonCodecType.Both
-      case t if t <:< typeOf[Configuration.DecodeOnly] =>
+      case t if t == typeOf[Configuration.DecodeOnly] =>
         JsonCodecType.DecodeOnly
-      case t if t <:< typeOf[Configuration.EncodeOnly] =>
+      case t if t == typeOf[Configuration.EncodeOnly] =>
         JsonCodecType.EncodeOnly
       case t =>
         c.warning(
@@ -103,6 +103,13 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
 
   private[this] val cfgNameTransformation =
     q"$config.transformMemberNames"
+  private[this] val cfgUseDefaults =
+    q"$config.useDefaults"
+  private[this] val cfgDiscriminator =
+    q"$config.discriminator"
+
+  private[this] val defaultDiscriminator: Tree =
+    q"_root_.io.circe.derivation.Discriminator.default"
 
   private[this] def codec(clsDef: ClassDef): Tree = {
     val tpname = clsDef.name
@@ -114,11 +121,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tpname
       (
         q"""implicit val $decoderName: $DecoderClass[$Type] =
-            _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation)""",
+            _root_.io.circe.derivation.deriveDecoder[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)""",
         q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
-            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation)""",
+            _root_.io.circe.derivation.deriveEncoder[$Type]($cfgNameTransformation, $cfgDiscriminator)""",
         q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($cfgNameTransformation, $cfgUseDefaults, $cfgDiscriminator)"""
       )
     } else {
       val tparamNames = tparams.map(_.name)
