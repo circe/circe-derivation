@@ -8,5 +8,5 @@ object Discriminator {
   final case class Embedded(fieldName: String) extends Discriminator
   final case object TypeDiscriminator extends Discriminator
 
-  lazy val default = Embedded("type")
+  val default: Discriminator = Embedded("type")
 }
