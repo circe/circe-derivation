@@ -357,7 +357,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    val globalUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
+    val currentUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
       transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
@@ -433,7 +433,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         def accumulatingDecode(member: Member): Tree = {
           val realFieldName =
             member.keyName.getOrElse(transformName(member.decodedName))
-          if (globalUseDefaults && member.default.isDefined) {
+          if (currentUseDefaults && member.default.isDefined) {
             q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
               _root_.cats.data.Validated.Valid(${member.default.get})
               } else ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
@@ -823,7 +823,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     // Valid only in macro!!
-    val globalUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
+    val currentUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
       transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
@@ -905,7 +905,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         def decode(member: Member): Tree = {
           val realFieldName =
             member.keyName.getOrElse(transformName(member.decodedName))
-          if (globalUseDefaults && member.default.isDefined) {
+          if (currentUseDefaults && member.default.isDefined) {
             q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
               Right(${member.default.get})
               } else ${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName)
@@ -949,7 +949,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         def accumulatingDecode(member: Member): Tree = {
           val realFieldName =
             member.keyName.getOrElse(transformName(member.decodedName))
-          if (globalUseDefaults && member.default.isDefined) {
+          if (currentUseDefaults && member.default.isDefined) {
             q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
               _root_.cats.data.Validated.Valid(${member.default.get})
               } else ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
