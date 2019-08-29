@@ -1,7 +1,6 @@
 package io.circe.derivation
 
 import io.circe.{ Codec, Decoder, Encoder }
-
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.blackbox
 
