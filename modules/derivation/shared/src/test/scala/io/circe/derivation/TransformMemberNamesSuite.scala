@@ -19,12 +19,10 @@ object TransformMemberNamesSuiteCodecs extends Serializable {
   implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase, Discriminator.default)
   val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase, true, Discriminator.default)
 
-  implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] = deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"),
-      true,
-      Discriminator.default)
+  implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] =
+    deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), true, Discriminator.default)
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] =
-    deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"),
-      Discriminator.default)
+    deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), Discriminator.default)
   def codecForQux[A: Decoder: Encoder]: Codec.AsObject[Qux[A]] = deriveCodec(
     renaming.replaceWith("aa" -> "1", "bb" -> "2"),
     true,
