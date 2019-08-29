@@ -47,11 +47,10 @@ object TransformMemberNamesExample {
 
     implicit val eqAddress: Eq[Address] = Eq.fromUniversalEquals
 
-    implicit val encodeAddress: Encoder[Address] = deriveEncoder(renaming.replaceWith("number" -> "#"),
-      Discriminator.default)
-    implicit val decodeAddress: Decoder[Address] = deriveDecoder(renaming.replaceWith("number" -> "#"),
-      true,
-      Discriminator.default)
+    implicit val encodeAddress: Encoder[Address] =
+      deriveEncoder(renaming.replaceWith("number" -> "#"), Discriminator.default)
+    implicit val decodeAddress: Decoder[Address] =
+      deriveDecoder(renaming.replaceWith("number" -> "#"), true, Discriminator.default)
   }
 
   case class Abc(a: String, b: String, c: String)
