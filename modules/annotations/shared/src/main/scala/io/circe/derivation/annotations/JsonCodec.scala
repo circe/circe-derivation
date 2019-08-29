@@ -87,11 +87,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
 
   private[this] def codecFrom(tree: Tree): JsonCodecType =
     tree.tpe.dealias match {
-      case t if t == typeOf[Configuration.Codec] =>
+      case t if t <:< typeOf[Configuration.Codec] =>
         JsonCodecType.Both
-      case t if t == typeOf[Configuration.DecodeOnly] =>
+      case t if t <:< typeOf[Configuration.DecodeOnly] =>
         JsonCodecType.DecodeOnly
-      case t if t == typeOf[Configuration.EncodeOnly] =>
+      case t if t <:< typeOf[Configuration.EncodeOnly] =>
         JsonCodecType.EncodeOnly
       case t =>
         c.warning(
