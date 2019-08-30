@@ -342,6 +342,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             if (ks.lengthCompare(1) == 0) {
               ks.head match {
                 case ..$objectWrapperCases
+                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
               }
             } else {
               _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
@@ -724,6 +725,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             if (ks.lengthCompare(1) == 0) {
               ks.head match {
                 case ..$objectWrapperCases
+                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
               }
             } else {
               _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
