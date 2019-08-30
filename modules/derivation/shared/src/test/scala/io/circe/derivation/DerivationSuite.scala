@@ -6,6 +6,10 @@ import io.circe.syntax._
 import io.circe.testing.CodecTests
 
 object DerivationSuiteCodecs extends Serializable {
+  private[this] val scala, Any, String, Unit, Nil = ()
+  private[this] trait scala; private[this] trait Any; private[this] trait String; private[this] trait Unit;
+  private[this] trait List; private[this] trait Option
+
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder
   implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder
   val codecForFoo: Codec.AsObject[Foo] = deriveCodec
