@@ -311,27 +311,30 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       val value =
         Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-      cq"""$value => c.get(k)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
+      cq"""$value => c.get($value)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value =
         Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](identity)"""
+      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
     }.toList
 
     c.Expr[Decoder[T]](
       q"""
-    $discriminator match {
+    ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
       case _root_.scala.None =>
         new _root_.io.circe.Decoder[$tpe] {
           def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-            c.keys.fold[_root_.scala.List[_root_.java.lang.String]](_root_.scala.Nil)(_.toList) match {
-              case _root_.scala.List(k) => k match {
+            val ks = c.keys.toList.flatMap(_.toList)
+
+            if (ks.lengthCompare(1) == 0) {
+              ks.head match {
                 case ..$objectWrapperCases
               }
-              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure($tpe, c.history))
+            } else {
+              _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
             }
           }
         }
@@ -590,7 +593,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
 
-        $discriminator match {
+        ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
           case _root_.scala.None =>
             _root_.io.circe.JsonObject(($name, _root_.io.circe.Json.fromJsonObject(encoded)))
           case _root_.scala.Some(typeFieldName) =>
@@ -674,14 +677,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       val value =
         Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-      cq"""$value => c.get(k)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
+      cq"""$value => c.get($value)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value =
         Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](identity)"""
+      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
     }.toList
 
     val encoderCases = subclasses.map { s =>
@@ -691,7 +694,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
 
-        $discriminator match {
+        ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
           case _root_.scala.None =>
             _root_.io.circe.JsonObject(($name, _root_.io.circe.Json.fromJsonObject(encoded)))
           case _root_.scala.Some(typeFieldName) =>
@@ -702,15 +705,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     c.Expr[Codec.AsObject[T]](
       q"""
-    $discriminator match {
+    ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
       case _root_.scala.None =>
         new _root_.io.circe.Codec.AsObject[$tpe] {
           def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-            c.keys.fold[_root_.scala.List[_root_.java.lang.String]](_root_.scala.Nil)(_.toList) match {
-              case _root_.scala.List(k) => k match {
+            val ks = c.keys.toList.flatMap(_.toList)
+
+            if (ks.lengthCompare(1) == 0) {
+              ks.head match {
                 case ..$objectWrapperCases
               }
-              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure($tpe, c.history))
+            } else {
+              _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
             }
           }
           def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {

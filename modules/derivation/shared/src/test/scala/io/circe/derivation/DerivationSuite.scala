@@ -41,6 +41,17 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val decodeWithDefaults: Decoder[WithDefaults] = deriveDecoder(identity, true, None)
   implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
   val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
+
+  val typeField = Some("_type")
+  implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, false, typeField)
+  implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder(identity, typeField)
+
+  implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, false, typeField)
+  implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, typeField)
+
+  implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
+  implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
+  val codecForAdt: Codec[Adt] = deriveCodec(identity, false, typeField)
 }
 
 class DerivationSuite extends CirceSuite {
@@ -237,6 +248,16 @@ class DerivationSuite extends CirceSuite {
       codecForWithDefaults,
       decodeWithDefaults,
       encodeWithDefaults
+    ).codecAgreement
+  )
+
+  checkLaws(
+    "CodecAgreementWithCodec[Adt]",
+    CodecAgreementTests[Adt](
+      codecForAdt,
+      codecForAdt,
+      decodeAdt,
+      encodeAdt
     ).codecAgreement
   )
 
