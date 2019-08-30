@@ -2,7 +2,7 @@ package io.circe.derivation
 
 import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples._
-import io.circe.literal._
+import io.circe.syntax._
 import io.circe.testing.CodecTests
 
 object DerivationSuiteCodecs extends Serializable {
@@ -48,6 +48,9 @@ object DerivationSuiteCodecs extends Serializable {
 
   implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, false, typeField)
   implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, typeField)
+
+  implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder(identity, false, typeField)
+  implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder(identity, typeField)
 
   implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
   implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
@@ -265,9 +268,12 @@ class DerivationSuite extends CirceSuite {
     val expectedBothDefaults = Right(WithDefaults(0, 1, List("")))
     val expectedOneDefault = Right(WithDefaults(0, 1, Nil))
 
-    assert(decodeWithDefaults.decodeJson(json"""{"i": 0}""") === expectedBothDefaults)
-    assert(codecForWithDefaults.decodeJson(json"""{"i": 0}""") === expectedBothDefaults)
-    assert(decodeWithDefaults.decodeJson(json"""{"i": 0, "k": []}""") === expectedOneDefault)
-    assert(codecForWithDefaults.decodeJson(json"""{"i": 0, "k": []}""") === expectedOneDefault)
+    val j1 = Json.obj("i" := 0)
+    val j2 = Json.obj("i" := 0, "k" := List.empty[String])
+
+    assert(decodeWithDefaults.decodeJson(j1) === expectedBothDefaults)
+    assert(codecForWithDefaults.decodeJson(j1) === expectedBothDefaults)
+    assert(decodeWithDefaults.decodeJson(j2) === expectedOneDefault)
+    assert(codecForWithDefaults.decodeJson(j2) === expectedOneDefault)
   }
 }
