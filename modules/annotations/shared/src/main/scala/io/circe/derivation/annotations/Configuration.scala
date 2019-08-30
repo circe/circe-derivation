@@ -11,8 +11,6 @@ import io.circe.derivation.renaming
  * derived - or if only one of them will be.
  */
 sealed trait Configuration {
-  import io.circe.derivation.Discriminator
-
   type Config <: Configuration
 
   /** Transforms the names of type members in the JSON, allowing, for example,
@@ -22,11 +20,11 @@ sealed trait Configuration {
 
   def useDefaults: Boolean
 
-  def discriminator: Discriminator
+  def discriminator: Option[String]
 
   protected def getA(transformMemberNames: String => String): Config
 
-  protected def applyDiscriminator(discriminator: Discriminator): Config
+  protected def applyDiscriminator(discriminator: Option[String]): Config
 
   /** Creates a configuration which produces snake cased member names */
   final def withSnakeCaseMemberNames: Config =
@@ -36,15 +34,11 @@ sealed trait Configuration {
   final def withKebabCaseMemberNames: Config =
     getA(renaming.kebabCase)
 
-  final def withDiscriminatorName(name: String): Config =
-    applyDiscriminator(Discriminator.Embedded(name))
-
-  final def withTypeDiscriminator: Config =
-    applyDiscriminator(Discriminator.TypeDiscriminator)
+  final def withDiscriminator(name: String): Config =
+    applyDiscriminator(Some(name))
 }
 
 object Configuration {
-  import io.circe.derivation.Discriminator
 
   /** Configuration allowing customisation of JSON produced when encoding or
    *  decoding.
@@ -54,7 +48,7 @@ object Configuration {
   final case class Codec(
     transformMemberNames: String => String,
     useDefaults: Boolean,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ) extends Configuration {
 
     type Config = Codec
@@ -63,7 +57,7 @@ object Configuration {
       Codec(transformMemberNames, useDefaults, discriminator)
 
     protected final def applyDiscriminator(
-      discriminator: Discriminator
+      discriminator: Option[String]
     ): Codec =
       Codec(transformMemberNames, useDefaults, discriminator)
   }
@@ -76,7 +70,7 @@ object Configuration {
   final case class DecodeOnly(
     transformMemberNames: String => String,
     useDefaults: Boolean,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ) extends Configuration {
 
     type Config = DecodeOnly
@@ -84,7 +78,7 @@ object Configuration {
     protected final def getA(transformMemberNames: String => String) =
       DecodeOnly(transformMemberNames, useDefaults, discriminator)
 
-    protected final def applyDiscriminator(discriminator: Discriminator) =
+    protected final def applyDiscriminator(discriminator: Option[String]) =
       DecodeOnly(transformMemberNames, useDefaults, discriminator)
   }
 
@@ -96,7 +90,7 @@ object Configuration {
   final case class EncodeOnly(
     transformMemberNames: String => String,
     useDefaults: Boolean,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ) extends Configuration {
 
     type Config = EncodeOnly
@@ -104,20 +98,20 @@ object Configuration {
     protected final def getA(transformMemberNames: String => String) =
       EncodeOnly(transformMemberNames, useDefaults, discriminator)
 
-    protected final def applyDiscriminator(discriminator: Discriminator) =
+    protected final def applyDiscriminator(discriminator: Option[String]) =
       EncodeOnly(transformMemberNames, useDefaults, discriminator)
 
   }
 
   /** Create a default configuration with both decoder and encoder */
   val default: Codec =
-    Codec(identity, true, Discriminator.default)
+    Codec(identity, true, None)
 
   /** Create a default configuration with **only** encoder */
   val encodeOnly: EncodeOnly =
-    EncodeOnly(identity, true, Discriminator.default)
+    EncodeOnly(identity, true, None)
 
   /** Create a default configuration with **only** decoder */
   val decodeOnly: DecodeOnly =
-    DecodeOnly(identity, true, Discriminator.default)
+    DecodeOnly(identity, true, None)
 }

@@ -138,7 +138,7 @@ class JsonCodecMacrosSuite extends CirceSuite {
     Encoder.AsObject[Single]
     Encoder.AsObject[Typed1[Int]]
     Encoder.AsObject[Typed2[Int, Long]]
-//    Encoder.AsObject[Hierarchy]
+    // Encoder.AsObject[Hierarchy]
     Encoder.AsObject[SelfRecursiveWithOption]
   }
 

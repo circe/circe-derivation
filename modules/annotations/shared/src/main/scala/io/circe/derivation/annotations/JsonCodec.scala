@@ -108,9 +108,6 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
   private[this] val cfgDiscriminator =
     q"$config.discriminator"
 
-  private[this] val defaultDiscriminator: Tree =
-    q"_root_.io.circe.derivation.Discriminator.default"
-
   private[this] def codec(clsDef: ClassDef): Tree = {
     val tpname = clsDef.name
     val tparams = clsDef.tparams

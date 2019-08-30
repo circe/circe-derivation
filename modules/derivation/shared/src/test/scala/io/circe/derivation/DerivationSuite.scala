@@ -2,6 +2,7 @@ package io.circe.derivation
 
 import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples._
+import io.circe.literal._
 import io.circe.testing.CodecTests
 
 object DerivationSuiteCodecs extends Serializable {
@@ -36,6 +37,10 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val decodeCustomApplyParamTypesClass: Decoder[CustomApplyParamTypesClass] = deriveDecoder
   implicit val encodeCustomApplyParamTypesClass: Encoder[CustomApplyParamTypesClass] = deriveEncoder
   val codecForCustomApplyParamTypesClass: Codec[CustomApplyParamTypesClass] = deriveCodec
+
+  implicit val decodeWithDefaults: Decoder[WithDefaults] = deriveDecoder(identity, true, None)
+  implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
+  val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
 }
 
 class DerivationSuite extends CirceSuite {
@@ -224,4 +229,24 @@ class DerivationSuite extends CirceSuite {
       encodeCustomApplyParamTypesClass
     ).codecAgreement
   )
+
+  checkLaws(
+    "CodecAgreementWithCodec[WithDefaults]",
+    CodecAgreementTests[WithDefaults](
+      codecForWithDefaults,
+      codecForWithDefaults,
+      decodeWithDefaults,
+      encodeWithDefaults
+    ).codecAgreement
+  )
+
+  "useDefaults" should "cause defaults to be used for missing fields" in {
+    val expectedBothDefaults = Right(WithDefaults(0, 1, List("")))
+    val expectedOneDefault = Right(WithDefaults(0, 1, Nil))
+
+    assert(decodeWithDefaults.decodeJson(json"""{"i": 0}""") === expectedBothDefaults)
+    assert(codecForWithDefaults.decodeJson(json"""{"i": 0}""") === expectedBothDefaults)
+    assert(decodeWithDefaults.decodeJson(json"""{"i": 0, "k": []}""") === expectedOneDefault)
+    assert(codecForWithDefaults.decodeJson(json"""{"i": 0, "k": []}""") === expectedOneDefault)
+  }
 }

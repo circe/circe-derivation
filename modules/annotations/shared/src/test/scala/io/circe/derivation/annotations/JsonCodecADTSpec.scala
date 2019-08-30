@@ -5,7 +5,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.scalatest._
 
-object JsonCodecADTSpecSamples {
+/*object JsonCodecADTSpecSamples {
 
   @JsonCodec
   sealed trait ADT1
@@ -13,13 +13,13 @@ object JsonCodecADTSpecSamples {
   @JsonCodec case class ADT1A(a: Int) extends ADT1
   @JsonCodec case class ADT1B(b: Int) extends ADT1
 
-  @JsonCodec(Configuration.default.withDiscriminatorName("_type"))
+  @JsonCodec(Configuration.default.withDiscriminator("_type"))
   sealed trait ADT1Custom
 
   @JsonCodec case class ADT1CustomA(a: Int) extends ADT1Custom
   @JsonCodec case class ADT1CustomB(b: Int) extends ADT1Custom
 
-  @JsonCodec(Configuration.default.withTypeDiscriminator)
+  @JsonCodec(Configuration.default)
   sealed trait ADTTyped
 
   @JsonCodec case class ADTTypedA(a: Int) extends ADTTyped
@@ -79,3 +79,4 @@ class JsonCodecADTSpec extends WordSpec with Matchers {
     }
   }
 }
+*/

@@ -94,6 +94,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion % Test,
+      "io.circe" %%% "circe-literal" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
       "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP8" % Test

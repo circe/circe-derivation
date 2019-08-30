@@ -10,20 +10,20 @@ package object derivation {
   final def deriveDecoder[A](
     transformMemberNames: String => String,
     useDefaults: Boolean,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ): Decoder[A] =
     macro DerivationMacros.materializeDecoderWithTransformMemberNames[A]
 
   final def deriveEncoder[A](
     transformMemberNames: String => String,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ): Encoder.AsObject[A] =
     macro DerivationMacros.materializeEncoderWithTransformMemberNames[A]
 
   final def deriveCodec[A](
     transformMemberNames: String => String,
     useDefaults: Boolean,
-    discriminator: Discriminator
+    discriminator: Option[String]
   ): Codec.AsObject[A] =
     macro DerivationMacros.materializeCodecWithTransformMemberNames[A]
 }

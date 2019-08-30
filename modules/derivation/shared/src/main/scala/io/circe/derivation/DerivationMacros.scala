@@ -12,7 +12,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] val encoderTC: Type = typeOf[Encoder[_]].typeConstructor
   private[this] val decoderTC: Type = typeOf[Decoder[_]].typeConstructor
   private[this] val defaultDiscriminator =
-    c.Expr[Discriminator](q"_root_.io.circe.derivation.Discriminator.default")
+    c.Expr[Option[String]](q"_root_.scala.None")
   private[this] val trueExpression = c.Expr[Boolean](q"true")
 
   private[this] def failWithMessage(message: String): Nothing = c.abort(c.enclosingPosition, message)
@@ -153,20 +153,21 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   private[this] val applyName: TermName = TermName("apply")
 
-  private[this] def membersFromCompanionApply(tpe: Type): Option[ProductRepr] = tpe.companion.decl(applyName) match {
-    case NoSymbol => None
-    case s =>
-      val defaults = caseClassFieldsDefaults(tpe)
-      s.alternatives.collect {
-        case m: MethodSymbol => m.paramLists
-      }.sortBy(-_.map(_.size).sum).headOption.map { applyParams =>
-        //We use zipwithIndex for gathering default field value if available
-        ProductReprWithApply(
-          tpe,
-          applyParams.map(_.zipWithIndex.map(Member.fromSymbol(tpe, defaults)))
-        )
-      }
-  }
+  private[this] def membersFromCompanionApply(tpe: Type): Option[ProductRepr] =
+    tpe.typeSymbol.companion.typeSignature.member(applyName) match {
+      case NoSymbol => None
+      case s =>
+        val defaults = caseClassFieldsDefaults(tpe)
+        s.alternatives.collect {
+          case m: MethodSymbol => m.paramLists
+        }.sortBy(-_.map(_.size).sum).headOption.map { applyParams =>
+          //We use zipwithIndex for gathering default field value if available
+          ProductReprWithApply(
+            tpe,
+            applyParams.map(_.zipWithIndex.map(Member.fromSymbol(tpe, defaults)))
+          )
+        }
+    }
 
   private[this] def membersFromPrimaryConstr(tpe: Type): Option[ProductRepr] =
     if (tpe.typeSymbol.isAbstract) {
@@ -231,7 +232,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   def materializeDecoderWithTransformMemberNames[T: c.WeakTypeTag](
     transformMemberNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Decoder[T]] =
     materializeDecoderImpl[T](
       Some(transformMemberNames),
@@ -241,14 +242,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   def materializeEncoderWithTransformMemberNames[T: c.WeakTypeTag](
     transformMemberNames: c.Expr[String => String],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] =
     materializeEncoderImpl[T](Some(transformMemberNames), discriminator)
 
   def materializeCodecWithTransformMemberNames[T: c.WeakTypeTag](
     transformMemberNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Codec.AsObject[T]] =
     materializeCodecImpl[T](
       Some(transformMemberNames),
@@ -259,7 +260,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeCodecImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -283,7 +284,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -302,53 +303,45 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeDecoderTraitImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     subclasses: Set[Symbol],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    expandDiscriminator(discriminator.tree) match {
-      case _root_.io.circe.derivation.Discriminator.Embedded(fieldName) =>
-        val instanceDefs: List[Tree] = subclasses.map { s =>
-          val value =
-            Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+    val objectWrapperCases: List[Tree] = subclasses.map { s =>
+      val value =
+        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-          cq""" $value => _root_.io.circe.Decoder[${s.asType}]"""
-        }.toList
+      cq"""$value => c.get(k)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
+    }.toList
 
-        c.Expr[Decoder[T]](q"""
-            for {
-                visitorType <- _root_.io.circe.Decoder[String].prepare(_.downField($fieldName))
-                value <- visitorType match {
-                  case ..$instanceDefs
-                }
-              } yield value
+    val discriminatorCases: List[Tree] = subclasses.map { s =>
+      val value =
+        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-          """)
-      case _root_.io.circe.derivation.Discriminator.TypeDiscriminator =>
-        val instanceDefs: List[Tree] = subclasses.map { s =>
-          val value =
-            Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](identity)"""
+    }.toList
 
-          cq""" $value => c.get(keys.head)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[ _root_.io.circe.Decoder.Result[$tpe]]"""
-        }.toList
-
-        val result = q"""
-           new _root_.io.circe.Decoder[$tpe] {
-                 override def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-                   val keys=c.keys.map(_.toList).getOrElse(Nil)
-                   if(keys.isEmpty){
-                     Left(_root_.io.circe.DecodingFailure("Missing type field discriminator for trait field", Nil))
-                   } else {
-                     keys.head match {
-                       case ..$instanceDefs
-                     }
-                   }
-                 }
-               }
-          """
-        c.Expr[Decoder[T]](result)
+    c.Expr[Decoder[T]](
+      q"""
+    $discriminator match {
+      case _root_.scala.None =>
+        new _root_.io.circe.Decoder[$tpe] {
+          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
+            c.keys.fold[_root_.scala.List[_root_.java.lang.String]](_root_.scala.Nil)(_.toList) match {
+              case _root_.scala.List(k) => k match {
+                case ..$objectWrapperCases
+              }
+              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure($tpe, c.history))
+            }
+          }
+        }
+      case _root_.scala.Some(typeFieldName) =>
+        _root_.io.circe.Decoder[String].prepare(_.downField(typeFieldName)).flatMap {
+          case ..$discriminatorCases
+        }
     }
-
+    """
+    )
   }
 
   private[this] def materializeDecoderCaseClassImpl[T: c.WeakTypeTag](
@@ -356,8 +349,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     useDefaults: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
-
-    val currentUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
       transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
@@ -393,17 +384,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
         val reversed = repr.paramListsWithNames.flatten.reverse
 
-        def decode(member: Member): Tree = {
-          val realFieldName =
-            member.keyName.getOrElse(transformName(member.decodedName))
-          q"this.${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName))"
-
-        }
-
         val last: Tree = q"""
           {
             val $resName: _root_.io.circe.Decoder.Result[${reversed.head._1.tpe}] =
-              ${decode(reversed.head._1)}
+              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName)}
 
             if ($resName.isRight) {
               val ${reversed.head._2}: ${reversed.head._1.tpe} =
@@ -417,9 +401,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         """
 
         val result: Tree = reversed.tail.foldLeft(last) {
-          case (acc, (member @ Member(_, _, memberType, _, _, _), resultName)) => q"""
+          case (acc, (member @ Member(_, _, memberType, _, _, _), resultName)) =>
+            q"""
             {
-              val $resName: _root_.io.circe.Decoder.Result[$memberType] = ${decode(member)}
+              val $resName: _root_.io.circe.Decoder.Result[$memberType] = ${productMemberDecoding(
+              repr,
+              member,
+              useDefaults,
+              transformName
+            )}
 
               if ($resName.isRight) {
                 val $resultName: $memberType = ${extractFromRight(resName, memberType)}
@@ -430,27 +420,13 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           """
         }
 
-        def accumulatingDecode(member: Member): Tree = {
-          val realFieldName =
-            member.keyName.getOrElse(transformName(member.decodedName))
-          if (currentUseDefaults && member.default.isDefined) {
-            q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
-              _root_.cats.data.Validated.Valid(${member.default.get})
-              } else ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
-            )"""
-          } else {
-            q"""${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
-            )"""
-          }
-        }
-
         val (results: List[Tree], resultNames: List[TermName]) =
           reversed.reverse.map {
             case (member, resultName) =>
               (
                 q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
-                ${accumulatingDecode(member)}
+                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
             """,
                 resultName
               )
@@ -603,47 +579,40 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeEncoderTraitImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     subclasses: Set[Symbol],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    val instanceDefs: List[Tree] =
-      expandDiscriminator(discriminator.tree) match {
-        case _root_.io.circe.derivation.Discriminator.Embedded(fieldName) =>
-          subclasses.map { s =>
-            val subTpe = s.asClass.toType
+    val encoderCases = subclasses.map { s =>
+      val subTpe = s.asClass.toType
+      val name = s.asClass.name.decodedName.toString.toLowerCase
 
-            cq"""obj : $subTpe => obj.asJsonObject.add($fieldName, ${Literal(
-              Constant(s.asClass.name.decodedName.toString.toLowerCase())
-            )}.asJson)"""
-          }.toList
+      cq"""value: $subTpe =>
+        val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
 
-        case _root_.io.circe.derivation.Discriminator.TypeDiscriminator =>
-          subclasses.map { s =>
-            val subTpe = s.asClass.toType
-
-            cq"""obj : $subTpe => _root_.io.circe.JsonObject(${Literal(
-              Constant(s.asClass.name.decodedName.toString.toLowerCase())
-            )} ->
-              _root_.io.circe.Json.fromJsonObject(obj.asJsonObject)
-            )"""
-          }.toList
-      }
-    c.Expr[Encoder.AsObject[T]](q"""
-      {
-        import io.circe.syntax._
-        new _root_.io.circe.Encoder.AsObject[$tpe] {
-           override def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
-             case ..$instanceDefs
-          }
+        $discriminator match {
+          case _root_.scala.None =>
+            _root_.io.circe.JsonObject(($name, _root_.io.circe.Json.fromJsonObject(encoded)))
+          case _root_.scala.Some(typeFieldName) =>
+            encoded.add(typeFieldName, _root_.io.circe.Json.fromString($name))
         }
+      """
+    }.toList
+
+    c.Expr[Encoder.AsObject[T]](
+      q"""
+    new _root_.io.circe.Encoder.AsObject[$tpe] {
+      def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
+        case ..$encoderCases
       }
-      """)
+    }
+    """
+    )
   }
 
   private[this] def materializeEncoderImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
     // we manage to work on ADT lets check the subclasses
@@ -668,7 +637,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       ListMap()
     } else {
       try {
-        tpe.companion.member(TermName("apply")).asTerm.alternatives.find(_.isSynthetic) match {
+        tpe.typeSymbol.companion.typeSignature.member(TermName("apply")).asTerm.alternatives.find(_.isSynthetic) match {
           case None => ListMap()
           case Some(syntatic) =>
             ListMap(
@@ -677,7 +646,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
                   (
                     field.name.toTermName.decodedName.toString, {
                       val method = TermName(s"apply$$default$$${i + 1}")
-                      tpe.companion.member(method) match {
+                      tpe.typeSymbol.companion.typeSignature.member(method) match {
                         case NoSymbol => None
                         case _        => Some(q"${tpe.typeSymbol.companion}.$method")
                       }
@@ -693,137 +662,136 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     }
 
-  private[this] val withDiscriminatorRegex =
-    """.*\.withDiscriminatorName\("(.*)"\).*""".r
-
-  private[this] def expandDiscriminator(tree: Tree): Discriminator =
-    tree match {
-      case q"io.circe.derivation.annotations.Configuration.default.discriminator" =>
-        Discriminator.default
-      case other =>
-        other.toString() match {
-          case withDiscriminatorRegex(name) => Discriminator.Embedded(name)
-          case s: String if s.contains("withTypeDiscriminator") =>
-            Discriminator.TypeDiscriminator
-          case _ =>
-            Discriminator.default
-        }
-    }
-
   private[this] def materializeCodecTraitImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator],
+    discriminator: c.Expr[Option[String]],
     subclasses: Set[Symbol]
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
+    val objectWrapperCases: List[Tree] = subclasses.map { s =>
+      val value =
+        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-    expandDiscriminator(discriminator.tree) match {
-      case _root_.io.circe.derivation.Discriminator.Embedded(fieldName) =>
-        val decoderInstanceDefs: List[Tree] = subclasses.map { s =>
-          val value =
-            Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+      cq"""$value => c.get(k)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
+    }.toList
 
-          cq""" $value => _root_.io.circe.Decoder[${s.asType}].apply(c).map(_.asInstanceOf[$tpe])"""
-        }.toList
+    val discriminatorCases: List[Tree] = subclasses.map { s =>
+      val value =
+        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
 
-        val encoderInstanceDefs: List[Tree] = subclasses.map { s =>
-          val subTpe = s.asClass.toType
+      cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](identity)"""
+    }.toList
 
-          cq"""obj : $subTpe => obj.asJsonObject.add($fieldName, ${Literal(
-            Constant(s.asClass.name.decodedName.toString.toLowerCase())
-          )}.asJson)"""
-        }.toList
+    val encoderCases = subclasses.map { s =>
+      val subTpe = s.asClass.toType
+      val name = s.asClass.name.decodedName.toString.toLowerCase
 
-        val result = q"""
-            new _root_.io.circe.Codec.AsObject[$tpe] {
-               import io.circe.syntax._
-               override def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
-                 case ..$encoderInstanceDefs
-               }
+      cq"""value: $subTpe =>
+        val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
 
+        $discriminator match {
+          case _root_.scala.None =>
+            _root_.io.circe.JsonObject(($name, _root_.io.circe.Json.fromJsonObject(encoded)))
+          case _root_.scala.Some(typeFieldName) =>
+            encoded.add(typeFieldName, _root_.io.circe.Json.fromString($name))
+        }
+      """
+    }.toList
 
-             override def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-                def processDiscriminator(name:String):_root_.io.circe.Decoder.Result[$tpe]={
-                  name match {
-                    case ..$decoderInstanceDefs
-                 }
-               }
-               c.downField($fieldName).as[String].flatMap(t => processDiscriminator(t))
+    c.Expr[Codec.AsObject[T]](
+      q"""
+    $discriminator match {
+      case _root_.scala.None =>
+        new _root_.io.circe.Codec.AsObject[$tpe] {
+          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
+            c.keys.fold[_root_.scala.List[_root_.java.lang.String]](_root_.scala.Nil)(_.toList) match {
+              case _root_.scala.List(k) => k match {
+                case ..$objectWrapperCases
               }
-              }
-            """
-        c.Expr[Codec.AsObject[T]](result)
-      case _root_.io.circe.derivation.Discriminator.TypeDiscriminator =>
-        val decoderInstanceDefs: List[Tree] = subclasses.map { s =>
-          val value =
-            Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure($tpe, c.history))
+            }
+          }
+          def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
+            case ..$encoderCases
+          }
+        }
+      case _root_.scala.Some(typeFieldName) =>
+        new _root_.io.circe.Codec.AsObject[$tpe] {
+          private[this] val decoder =
+            _root_.io.circe.Decoder[String].prepare(_.downField(typeFieldName)).flatMap {
+              case ..$discriminatorCases
+            }
 
-          cq""" $value => c.get(keys.head)(_root_.io.circe.Decoder[${s.asType}]).map(_.asInstanceOf[$tpe])"""
-        }.toList
-
-        val encoderInstanceDefs: List[Tree] = subclasses.map { s =>
-          val subTpe = s.asClass.toType
-
-          cq"""obj : $subTpe => _root_.io.circe.JsonObject(${Literal(
-            Constant(s.asClass.name.decodedName.toString.toLowerCase())
-          )} ->
-              _root_.io.circe.Json.fromJsonObject(obj.asJsonObject)
-            )"""
-        }.toList
-
-        val result = q"""
-                   new _root_.io.circe.Codec.AsObject[$tpe] {
-                      import io.circe.syntax._
-                      override def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
-                        case ..$encoderInstanceDefs
-                     }
-
-                   override def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-                     val keys=c.keys.map(_.toList).getOrElse(Nil)
-                     if(keys.isEmpty){
-                       Left(_root_.io.circe.DecodingFailure("Missing type field discriminator for trait field", Nil))
-                     } else {
-                       keys.head match {
-                         case ..$decoderInstanceDefs
-                       }
-                     }
-                   }
-                 }
-          """
-        c.Expr[Codec.AsObject[T]](result)
+          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = decoder.apply(c)
+          def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
+            case ..$encoderCases
+          }
+        }
     }
-
+    """
+    )
   }
 
-  private[this] def extractUseDefaults(useDefaults: Tree): Boolean =
-    useDefaults match {
-      case q"true "  => true
-      case q"false " => false
-      case q"io.circe.derivation.annotations.Configuration.default.useDefaults " =>
-        true
-      case q"Configuration.default.useDefaults "                                                          => true
-      case q"Configuration.default.withSnakeCaseMemberNames.useDefaults "                                 => true
-      case q"io.circe.derivation.annotations.Configuration.default.withSnakeCaseMemberNames.useDefaults " => true
-      case q"Configuration.default.withKebabCaseMemberNames.useDefaults "                                 => true
-      case q"io.circe.derivation.annotations.Configuration.default.withKebabCaseMemberNames.useDefaults " => true
-      case q"Configuration.decodeOnly.useDefaults "                                                       => true
-      case q"io.circe.derivation.annotations.Configuration.decodeOnly.useDefaults "                       => true
-      case other if other.toString().endsWith(".useDefaults")                                             => true // hack for namespaces
+  private[this] def productMemberDecoding(
+    repr: ProductRepr,
+    member: Member,
+    useDefaults: c.Expr[Boolean],
+    transformName: String => Tree
+  ): Tree = {
+    val realFieldName =
+      member.keyName.getOrElse(transformName(member.decodedName))
+
+    member.default match {
+      case Some(defaultValue) =>
+        q"""
+        {
+          val field = c.downField($realFieldName)
+
+          if (field.failed && $useDefaults) {
+            _root_.scala.Right(${member.default.get})
+          } else {
+            ${repr.decoder(member.tpe).name}.tryDecode(field)
+          }
+        }
+        """
+      case None => q"${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName))"
     }
+  }
+
+  private[this] def productMemberAccumulatingDecoding(
+    repr: ProductRepr,
+    member: Member,
+    useDefaults: c.Expr[Boolean],
+    transformName: String => Tree
+  ): Tree = {
+    val realFieldName =
+      member.keyName.getOrElse(transformName(member.decodedName))
+
+    member.default match {
+      case Some(defaultValue) =>
+        q"""
+        {
+          val field = c.downField($realFieldName)
+
+          if (field.failed && $useDefaults) {
+            _root_.cats.data.Validated.Valid(${member.default.get})
+          } else {
+            ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field)
+          }
+        }
+        """
+      case None => q"${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName))"
+    }
+  }
 
   private[this] def materializeCodecCaseClassImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Discriminator]
+    discriminator: c.Expr[Option[String]]
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
-
-    // Valid only in macro!!
-    val currentUseDefaults: Boolean = extractUseDefaults(useDefaults.tree)
 
     def transformName(name: String): Tree =
       transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
@@ -902,30 +870,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
         val reversed = repr.paramListsWithNames.flatten.reverse
 
-        def decode(member: Member): Tree = {
-          val realFieldName =
-            member.keyName.getOrElse(transformName(member.decodedName))
-          if (currentUseDefaults && member.default.isDefined) {
-            q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
-              Right(${member.default.get})
-              } else ${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName)
-            )"""
-          } else {
-            q"""${repr.decoder(member.tpe).name}.tryDecode(c.downField($realFieldName)
-            )"""
-          }
-        }
-
         val last: Tree = q"""
           {
             val $resName: _root_.io.circe.Decoder.Result[${reversed.head._1.tpe}] =
-              ${decode(reversed.head._1)}
+              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName)}
 
             if ($resName.isRight) {
               val ${reversed.head._2}: ${reversed.head._1.tpe} =
                 ${extractFromRight(resName, reversed.head._1.tpe)}
 
-              new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](
+              _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](
                 ${repr.instantiate}
               ): _root_.io.circe.Decoder.Result[$tpe]
             } else ${castLeft(resName, tpe)}
@@ -933,9 +887,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         """
 
         val result: Tree = reversed.tail.foldLeft(last) {
-          case (acc, (member @ Member(_, _, memberType, _, _, _), resultName)) => q"""
+          case (acc, (member @ Member(_, _, memberType, _, _, _), resultName)) =>
+            q"""
             {
-              val $resName: _root_.io.circe.Decoder.Result[$memberType] = ${decode(member)}
+              val $resName: _root_.io.circe.Decoder.Result[$memberType] = ${productMemberDecoding(
+              repr,
+              member,
+              useDefaults,
+              transformName
+            )}
 
               if ($resName.isRight) {
                 val $resultName: $memberType = ${extractFromRight(resName, memberType)}
@@ -946,27 +906,13 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           """
         }
 
-        def accumulatingDecode(member: Member): Tree = {
-          val realFieldName =
-            member.keyName.getOrElse(transformName(member.decodedName))
-          if (currentUseDefaults && member.default.isDefined) {
-            q"""if(c.downField($realFieldName).isInstanceOf[_root_.io.circe.FailedCursor]) {
-              _root_.cats.data.Validated.Valid(${member.default.get})
-              } else ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
-            )"""
-          } else {
-            q"""${repr.decoder(member.tpe).name}.tryDecodeAccumulating(c.downField($realFieldName)
-            )"""
-          }
-        }
-
         val (results: List[Tree], resultNames: List[TermName]) =
           reversed.reverse.map {
             case (member, resultName) =>
               (
                 q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
-                ${accumulatingDecode(member)}
+                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
             """,
                 resultName
               )
