@@ -5,7 +5,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.scalatest._
 
-/*object JsonCodecADTSpecSamples {
+object JsonCodecADTSpecSamples {
 
   @JsonCodec
   sealed trait ADT1
@@ -37,15 +37,15 @@ class JsonCodecADTSpec extends WordSpec with Matchers {
     "serialize default" in {
       val a1: ADT1 = ADT1A(1)
 
-      a1.asJson.pretty(printer) should be("""{"a":1,"type":"adt1a"}""")
-      parse("""{"a":1,"type":"adt1a"}""").right.get.as[ADT1] should be(
+      a1.asJson.pretty(printer) should be("""{"adt1a":{"a":1}}""")
+      parse("""{"adt1a":{"a":1}}""").right.get.as[ADT1] should be(
         Right(a1)
       )
 
       val b1: ADT1 = ADT1B(1)
 
-      b1.asJson.pretty(printer) should be("""{"b":1,"type":"adt1b"}""")
-      parse("""{"b":1,"type":"adt1b"}""").right.get.as[ADT1] should be(
+      b1.asJson.pretty(printer) should be("""{"adt1b":{"b":1}}""")
+      parse("""{"adt1b":{"b":1}}""").right.get.as[ADT1] should be(
         Right(b1)
       )
     }
@@ -79,4 +79,3 @@ class JsonCodecADTSpec extends WordSpec with Matchers {
     }
   }
 }
-*/
