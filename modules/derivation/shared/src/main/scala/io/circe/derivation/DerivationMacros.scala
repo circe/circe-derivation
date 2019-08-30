@@ -150,8 +150,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] case class ProductReprWithConstr(tpe: Type, paramLists: List[List[Member]]) extends ProductRepr {
     protected[this] def instantiate(params: List[List[Tree]]): Tree = q"new $tpe(...$params)"
   }
+  private[this] case class ProductReprWithNone(tpe: Type, termSymbol: TermSymbol, paramLists: List[List[Member]] = Nil)
+      extends ProductRepr {
+    protected[this] def instantiate(params: List[List[Tree]]): Tree = q"${termSymbol}"
+  }
 
   private[this] val applyName: TermName = TermName("apply")
+
+  private[this] def membersForCaseObject(tpe: Type): Option[ProductRepr] =
+    tpe.termSymbol match {
+      case NoSymbol => None
+      case s        => Some(ProductReprWithNone(tpe, s.asTerm))
+    }
 
   private[this] def membersFromCompanionApply(tpe: Type): Option[ProductRepr] =
     tpe.typeSymbol.companion.typeSignature.member(applyName) match {
@@ -186,7 +196,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     }
 
   private[this] def productRepr(tpe: Type): Option[ProductRepr] =
-    membersFromPrimaryConstr(tpe).orElse(membersFromCompanionApply(tpe))
+    membersForCaseObject(tpe).orElse(membersFromPrimaryConstr(tpe)).orElse(membersFromCompanionApply(tpe))
 
   private[this] def fail(tpe: Type): Nothing = c.abort(
     c.enclosingPosition,
@@ -362,8 +372,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           q"""
             new _root_.io.circe.Decoder[$tpe] {
               final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
-                if (c.focus.exists(_.isObject)) {
-                  new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](new $tpe())
+                if (c.value.isObject) {
+                  new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](${repr.instantiate})
                 } else {
                   new _root_.scala.Left[_root_.io.circe.DecodingFailure, $tpe](
                     _root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history)
@@ -810,8 +820,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               final def encodeObject(a: $tpe): _root_.io.circe.JsonObject = _root_.io.circe.JsonObject.empty
 
               final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
-                if (c.focus.exists(_.isObject)) {
-                  new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](new $tpe())
+                if (c.value.isObject) {
+                  new _root_.scala.Right[_root_.io.circe.DecodingFailure, $tpe](${repr.instantiate})
                 } else {
                   new _root_.scala.Left[_root_.io.circe.DecodingFailure, $tpe](
                     _root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history)
