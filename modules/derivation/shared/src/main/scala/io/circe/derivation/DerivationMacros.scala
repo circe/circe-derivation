@@ -350,7 +350,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           }
         }
       case _root_.scala.Some(typeFieldName) =>
-        _root_.io.circe.Decoder[String].prepare(_.downField(typeFieldName)).flatMap {
+        _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
           case ..$discriminatorCases
         }
     }
@@ -738,7 +738,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       case _root_.scala.Some(typeFieldName) =>
         new _root_.io.circe.Codec.AsObject[$tpe] {
           private[this] val decoder =
-            _root_.io.circe.Decoder[String].prepare(_.downField(typeFieldName)).flatMap {
+            _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
               case ..$discriminatorCases
             }
 
