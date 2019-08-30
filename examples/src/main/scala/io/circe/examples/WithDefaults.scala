@@ -6,7 +6,7 @@ import org.scalacheck.Arbitrary
 case class WithDefaults(i: Int, j: Int = 1, k: List[String] = List(""))
 
 object WithDefaults {
-	implicit val arbitraryWithDefaults: Arbitrary[WithDefaults] = Arbitrary(
+  implicit val arbitraryWithDefaults: Arbitrary[WithDefaults] = Arbitrary(
     for {
       i <- Arbitrary.arbitrary[Int]
       j <- Arbitrary.arbitrary[Int]
