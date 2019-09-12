@@ -17,7 +17,7 @@ val compilerOptions = Seq(
 )
 
 val catsVersion = "2.0.0"
-val circeVersion = "0.12.0-RC4"
+val circeVersion = "0.12.1"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.12.0-M5"
 val scalaCheckVersion = "1.14.0"
@@ -96,7 +96,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-generic" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
-      "org.scalatestplus" %%% "scalatestplus-scalacheck" % "1.0.0-SNAP8" % Test
+      "org.scalatestplus" %%% "scalatestplus-scalacheck" % "3.1.0.0-RC2" % Test
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api"

@@ -16,6 +16,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] val trueExpression = c.Expr[Boolean](q"true")
 
   private[this] def failWithMessage(message: String): Nothing = c.abort(c.enclosingPosition, message)
+  private[this] def nameOf(s: Symbol): String = s.asClass.name.decodedName.toString.trim
 
   private[this] case class Instance(tc: Type, tpe: Type, name: TermName) {
     def resolve(): Tree = c.inferImplicitValue(appliedType(tc, List(tpe))) match {
@@ -319,14 +320,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val objectWrapperCases: List[Tree] = subclasses.map { s =>
       val value =
-        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+        Literal(Constant(nameOf(s)))
 
       cq"""$value => c.get($value)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value =
-        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+        Literal(Constant(nameOf(s)))
 
       cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
     }.toList
@@ -599,7 +600,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
-      val name = s.asClass.name.decodedName.toString.toLowerCase
+      val name = nameOf(s)
 
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
@@ -686,21 +687,21 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val objectWrapperCases: List[Tree] = subclasses.map { s =>
       val value =
-        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+        Literal(Constant(nameOf(s)))
 
       cq"""$value => c.get($value)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value =
-        Literal(Constant(s.asClass.name.decodedName.toString.toLowerCase()))
+        Literal(Constant(nameOf(s)))
 
       cq"""$value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
     }.toList
 
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
-      val name = s.asClass.name.decodedName.toString.toLowerCase
+      val name = nameOf(s)
 
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)

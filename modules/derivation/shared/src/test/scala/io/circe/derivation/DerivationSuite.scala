@@ -46,19 +46,34 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
   val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
 
-  val typeField = Some("_type")
-  implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, false, typeField)
-  implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder(identity, typeField)
+  implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder
+  implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder
 
-  implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, false, typeField)
-  implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, typeField)
+  implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder
+  implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder
 
-  implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder(identity, false, typeField)
-  implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder(identity, typeField)
+  implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder
+  implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder
 
-  implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
-  implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
-  val codecForAdt: Codec[Adt] = deriveCodec(identity, false, typeField)
+  implicit val decodeAdt: Decoder[Adt] = deriveDecoder
+  implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder
+  val codecForAdt: Codec[Adt] = deriveCodec
+
+  object discriminator {
+    val typeField = Some("_type")
+    implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder(identity, typeField)
+
+    implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, typeField)
+
+    implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder(identity, typeField)
+
+    implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
+    val codecForAdt: Codec[Adt] = deriveCodec(identity, false, typeField)
+  }
 }
 
 class DerivationSuite extends CirceSuite {
@@ -179,6 +194,16 @@ class DerivationSuite extends CirceSuite {
   )
 
   checkLaws(
+    "CodecAgreement[Adt]",
+    CodecAgreementTests[Adt](
+      GenericAutoCodecs.decodeAdt,
+      GenericAutoCodecs.encodeAdt,
+      decodeAdt,
+      encodeAdt
+    ).codecAgreement
+  )
+
+  checkLaws(
     "CodecAgreementWithCodec[Foo]",
     CodecAgreementTests[Foo](
       codecForFoo,
@@ -261,10 +286,10 @@ class DerivationSuite extends CirceSuite {
   checkLaws(
     "CodecAgreementWithCodec[Adt]",
     CodecAgreementTests[Adt](
-      codecForAdt,
-      codecForAdt,
-      decodeAdt,
-      encodeAdt
+      discriminator.codecForAdt,
+      discriminator.codecForAdt,
+      discriminator.decodeAdt,
+      discriminator.encodeAdt
     ).codecAgreement
   )
 
