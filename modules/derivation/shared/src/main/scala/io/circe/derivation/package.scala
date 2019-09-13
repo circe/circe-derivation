@@ -9,21 +9,24 @@ package object derivation {
 
   final def deriveDecoder[A](
     transformMemberNames: String => String,
+    transformConstructorNames: String => String,
     useDefaults: Boolean,
     discriminator: Option[String]
   ): Decoder[A] =
-    macro DerivationMacros.materializeDecoderWithTransformMemberNames[A]
+    macro DerivationMacros.materializeDecoderWithTransformNames[A]
 
   final def deriveEncoder[A](
     transformMemberNames: String => String,
+    transformConstructorNames: String => String,
     discriminator: Option[String]
   ): Encoder.AsObject[A] =
-    macro DerivationMacros.materializeEncoderWithTransformMemberNames[A]
+    macro DerivationMacros.materializeEncoderWithTransformNames[A]
 
   final def deriveCodec[A](
     transformMemberNames: String => String,
+    transformConstructorNames: String => String,
     useDefaults: Boolean,
     discriminator: Option[String]
   ): Codec.AsObject[A] =
-    macro DerivationMacros.materializeCodecWithTransformMemberNames[A]
+    macro DerivationMacros.materializeCodecWithTransformNames[A]
 }
