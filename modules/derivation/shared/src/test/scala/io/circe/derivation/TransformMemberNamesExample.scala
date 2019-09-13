@@ -19,9 +19,9 @@ object TransformMemberNamesExample {
 
     implicit val eqUser: Eq[User] = Eq.fromUniversalEquals
 
-    implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase, None)
-    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, None)
-    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, None)
+    implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase, identity, None)
+    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, identity, true, None)
+    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, identity, true, None)
   }
 
   case class Role(title: String)
@@ -30,8 +30,8 @@ object TransformMemberNamesExample {
     implicit val arbitraryRole: Arbitrary[Role] = Arbitrary(Arbitrary.arbitrary[String].map(Role(_)))
     implicit val eqRole: Eq[Role] = Eq.fromUniversalEquals
 
-    implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase, None)
-    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, None)
+    implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase, identity, None)
+    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, identity, true, None)
   }
 
   case class Address(number: Int, street: String, city: String)
@@ -48,9 +48,9 @@ object TransformMemberNamesExample {
     implicit val eqAddress: Eq[Address] = Eq.fromUniversalEquals
 
     implicit val encodeAddress: Encoder[Address] =
-      deriveEncoder(renaming.replaceWith("number" -> "#"), None)
+      deriveEncoder(renaming.replaceWith("number" -> "#"), identity, None)
     implicit val decodeAddress: Decoder[Address] =
-      deriveDecoder(renaming.replaceWith("number" -> "#"), true, None)
+      deriveDecoder(renaming.replaceWith("number" -> "#"), identity, true, None)
   }
 
   case class Abc(a: String, b: String, c: String)
@@ -66,7 +66,7 @@ object TransformMemberNamesExample {
 
     implicit val eqAbc: Eq[Abc] = Eq.fromUniversalEquals
 
-    implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x", None)
-    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", true, None)
+    implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x", identity, None)
+    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", identity, true, None)
   }
 }
