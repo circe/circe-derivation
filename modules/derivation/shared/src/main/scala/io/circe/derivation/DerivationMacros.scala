@@ -336,7 +336,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value = transformName(nameOf(s))
 
-      cq"""nme if nme == $value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      cq"""nme if nme == $value => c.as[${s.asType}].asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     c.Expr[Decoder[T]](
@@ -359,12 +359,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         }
       case _root_.scala.Some(typeFieldName) =>
         new _root_.io.circe.Decoder[$tpe] {
-          // NOTE: This wrapper might look pointless, but leaving it out causes compilation to fail with
-          // an assertion error from the compiler. There's probably a better way to avoid the problem.
-          private val internal = _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
-            case ..$discriminatorCases
-          }
-          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = internal.apply(c)
+          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
+            c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
+              case ..$discriminatorCases
+            }
         }
     }
     """
@@ -710,7 +708,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val discriminatorCases: List[Tree] = subclasses.map { s =>
       val value = transformName(nameOf(s))
 
-      cq"""nme if nme == $value => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      cq"""nme if nme == $value => c.as[${s.asType}].asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
     }.toList
 
     val encoderCases = subclasses.map { s =>
@@ -753,10 +751,12 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         }
       case _root_.scala.Some(typeFieldName) =>
         new _root_.io.circe.Codec.AsObject[$tpe] {
-          private[this] val decoder =
-            _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
-              case ..$discriminatorCases
-            }
+          private[this] val decoder = new _root_.io.circe.Decoder[$tpe] {
+            def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
+              c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
+                case ..$discriminatorCases
+              }
+          }
 
           def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = decoder.apply(c)
           def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
