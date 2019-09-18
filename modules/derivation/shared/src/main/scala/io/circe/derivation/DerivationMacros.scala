@@ -768,7 +768,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         {
           val field = c.downField($realFieldName)
 
-          if (field.failed && $useDefaults) {
+          if ((field.failed || field.focus.exists(_.isNull)) && $useDefaults) {
             _root_.scala.Right(${member.default.get})
           } else {
             ${repr.decoder(member.tpe).name}.tryDecode(field)
