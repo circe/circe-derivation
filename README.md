@@ -7,15 +7,12 @@
 
 This library provides macro-supported derivation of circe's type class instances. It differs from
 circe-generic in that this derivation is not based on Shapeless's generic representation of case
-classes and ADTs, and it is not intended to be as fully featured as `io.circe.generic`. In
-particular:
+classes and ADTs, and it is not intended to be as fully featured as `io.circe.generic`. Notably fully
+automatic derivation is a non-goal. The only targeted remaining feature for parity is constructor renaming.
 
-* Sealed hierarchies (ADTs) aren't supported ([yet](https://github.com/circe/circe-derivation/issues/8)).
-* It only supports "semi-automatic" derivation.
-
-On a more positive note, it has no dependencies apart from circe-core, should compile much more
-quickly in most cases, and supports some classes that circe-generic doesn't (e.g. Scrooge-generated
-representations of Thrift structs).
+In return for losing automatic derivation you get a library that has no dependencies apart from circe-core,
+should compile much more quickly in most cases, and supports some classes that circe-generic doesn't 
+(e.g. Scrooge-generated representations of Thrift structs).
 
 ## Who is this for?
 
