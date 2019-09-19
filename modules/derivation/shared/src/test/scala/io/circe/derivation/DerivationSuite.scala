@@ -317,10 +317,13 @@ class DerivationSuite extends CirceSuite {
 
     val j1 = Json.obj("i" := 0)
     val j2 = Json.obj("i" := 0, "k" := List.empty[String])
+    val j3 = Json.obj("i" := 0, "k" := Json.Null)
 
     assert(decodeWithDefaults.decodeJson(j1) === expectedBothDefaults)
     assert(codecForWithDefaults.decodeJson(j1) === expectedBothDefaults)
     assert(decodeWithDefaults.decodeJson(j2) === expectedOneDefault)
     assert(codecForWithDefaults.decodeJson(j2) === expectedOneDefault)
+    assert(decodeWithDefaults.decodeJson(j3) === expectedBothDefaults)
+    assert(codecForWithDefaults.decodeJson(j3) === expectedBothDefaults)
   }
 }
