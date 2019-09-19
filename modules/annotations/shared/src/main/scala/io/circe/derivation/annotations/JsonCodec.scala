@@ -10,7 +10,6 @@ class JsonCodec(
   def macroTransform(annottees: Any*): Any = macro GenericJsonCodecMacros.jsonCodecAnnotationMacro
 }
 
-// FIXME: Should these annotations also handle constructor transformations?
 class SnakeCaseJsonCodec extends scala.annotation.StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro GenericJsonCodecMacros.jsonCodecAnnotationMacro
 }

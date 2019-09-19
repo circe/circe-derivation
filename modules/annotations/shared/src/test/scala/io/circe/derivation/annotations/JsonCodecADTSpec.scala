@@ -25,7 +25,6 @@ object JsonCodecADTSpecSamples {
   @JsonCodec case class ADTTypedA(a: Int) extends ADTTyped
   @JsonCodec case class ADTTypedB(b: Int) extends ADTTyped
 
-  // TODO: Add test cases for constructor transformations
   @JsonCodec(Configuration.default.withKebabCaseConstructorNames)
   sealed trait ADTTransformed
 

@@ -29,7 +29,6 @@ sealed trait Configuration {
 
   protected def getA(transformMemberNames: String => String): Config
 
-  // TODO: Naming???
   protected def getC(transformConstructorNames: String => String): Config
 
   protected def applyDiscriminator(discriminator: Option[String]): Config
