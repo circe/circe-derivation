@@ -362,6 +362,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
             c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
               case ..$discriminatorCases
+              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
             }
         }
     }
@@ -755,6 +756,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
               c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
                 case ..$discriminatorCases
+                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
               }
           }
 

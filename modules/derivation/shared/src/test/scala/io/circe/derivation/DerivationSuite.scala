@@ -92,12 +92,30 @@ class DerivationSuite extends CirceSuite {
     assert(decodeEmptyCaseClass.decodeJson(json).isRight === json.isObject)
   }
 
+  it should "fail to decode ADTs with an invalid object wrapper" in {
+    assert(decodeAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
+    assert(discriminator.decodeAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
+  }
+
   "deriveCodec" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
     case class EmptyCaseClass()
 
     val codecForEmptyCaseClass: Codec[EmptyCaseClass] = deriveCodec
 
     assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+  }
+
+  it should "fail to decode ADTs with an invalid object wrapper" in {
+    assert(codecForAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
+    assert(discriminator.codecForAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
   checkAll("Codec[Foo]", CodecTests[Foo].codec)
