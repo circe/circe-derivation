@@ -108,11 +108,10 @@ package jsoncodecmacrossuiteaux {
     implicit val eqSelfRecursiveWithOption: Eq[SelfRecursiveWithOption] = Eq.fromUniversalEquals
 
     private def atDepth(depth: Int): Gen[SelfRecursiveWithOption] = if (depth < 3)
-      Arbitrary
-        .arbitrary[Option[SelfRecursiveWithOption]]
-        .map(
-          SelfRecursiveWithOption(_)
-        )
+      Gen.oneOf(
+        Gen.const(SelfRecursiveWithOption(None)),
+        atDepth(depth + 1).map(x => SelfRecursiveWithOption(Some(x)))
+      )
     else Gen.const(SelfRecursiveWithOption(None))
 
     implicit val arbitrarySelfRecursiveWithOption: Arbitrary[SelfRecursiveWithOption] =
