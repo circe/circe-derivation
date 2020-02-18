@@ -3,7 +3,8 @@ package io.circe.derivation.annotations
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object CustomJsonCodecSpecSamples {
 
@@ -27,7 +28,7 @@ object CustomJsonCodecSpecSamples {
 
 }
 
-class CustomJsonCodecSpec extends WordSpec with Matchers {
+class CustomJsonCodecSpec extends AnyWordSpec with Matchers {
 
   import CustomJsonCodecSpecSamples._
 
@@ -39,29 +40,29 @@ class CustomJsonCodecSpec extends WordSpec with Matchers {
     "correct generate json" in {
       val p1 = Person("andrea")
 
-      p1.asJson.pretty(printer) should be("{\"n\":\"andrea\"}")
-      parse("""{"n":"andrea"}""").right.get.as[Person] should be(Right(p1))
+      p1.asJson.printWith(printer) should be("{\"n\":\"andrea\"}")
+      parse("""{"n":"andrea"}""").flatMap(_.as[Person]) should be(Right(p1))
     }
 
     "remove empty values" in {
       val p1 = RemoveEmptyPerson()
 
-      p1.asJson.pretty(printer) should be(
+      p1.asJson.printWith(printer) should be(
         """{"values":[],"valuesSet":[],"obj":{}}"""
       )
 
       val p2 = RemoveEmptyPerson(values = List("a"))
 
-      p2.asJson.pretty(printer) should be(
+      p2.asJson.printWith(printer) should be(
         """{"values":["a"],"valuesSet":[],"obj":{}}"""
       )
-      parse("""{}""").right.get.as[RemoveEmptyPerson] should be(Right(p1))
+      parse("""{}""").flatMap(_.as[RemoveEmptyPerson]) should be(Right(p1))
     }
 
     "manage map" in {
       val g1 = Group("name", Map("peter" -> Person("Peter", 18)))
 
-      g1.asJson.pretty(printer) should be(
+      g1.asJson.printWith(printer) should be(
         """{"name":"name","team":{"peter":{"n":"Peter","a":18}}}"""
       )
 
