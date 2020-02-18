@@ -1,5 +1,6 @@
 package io.circe.derivation
 
+import com.stripe.scrooge.shapes._
 import io.circe.{ Decoder, Encoder }
 import io.circe.examples.scrooge._
 import io.circe.generic.semiauto.{ deriveDecoder => genericDeriveDecoder, deriveEncoder => genericDeriveEncoder }
