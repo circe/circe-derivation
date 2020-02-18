@@ -95,35 +95,35 @@ class DerivationSuite extends CirceSuite {
     assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
   }
 
-  checkLaws("Codec[Foo]", CodecTests[Foo].codec)
-  checkLaws("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
+  checkAll("Codec[Foo]", CodecTests[Foo].codec)
+  checkAll("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
 
-  checkLaws("Codec[Bar]", CodecTests[Bar].codec)
-  checkLaws("Codec[Bar] via Codec", CodecTests[Bar](codecForBar, codecForBar).codec)
-  checkLaws("Codec[Baz]", CodecTests[Baz].codec)
-  checkLaws("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
-  checkLaws("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
-  checkLaws("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
+  checkAll("Codec[Bar]", CodecTests[Bar].codec)
+  checkAll("Codec[Bar] via Codec", CodecTests[Bar](codecForBar, codecForBar).codec)
+  checkAll("Codec[Baz]", CodecTests[Baz].codec)
+  checkAll("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
+  checkAll("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
+  checkAll("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
 
-  checkLaws("Codec[MultiParamListClass]", CodecTests[MultiParamListClass].codec)
-  checkLaws(
+  checkAll("Codec[MultiParamListClass]", CodecTests[MultiParamListClass].codec)
+  checkAll(
     "Codec[MultiParamListClass] via Codec",
     CodecTests[MultiParamListClass](codecForMultiParamListClass, codecForMultiParamListClass).codec
   )
-  checkLaws("Codec[SimpleClass]", CodecTests[SimpleClass].codec)
-  checkLaws("Codec[SimpleClass] via Codec", CodecTests[SimpleClass](codecForSimpleClass, codecForSimpleClass).codec)
-  checkLaws("Codec[CustomApplyParamNamesClass]", CodecTests[CustomApplyParamNamesClass].codec)
-  checkLaws(
+  checkAll("Codec[SimpleClass]", CodecTests[SimpleClass].codec)
+  checkAll("Codec[SimpleClass] via Codec", CodecTests[SimpleClass](codecForSimpleClass, codecForSimpleClass).codec)
+  checkAll("Codec[CustomApplyParamNamesClass]", CodecTests[CustomApplyParamNamesClass].codec)
+  checkAll(
     "Codec[CustomApplyParamNamesClass] via Codec",
     CodecTests[CustomApplyParamNamesClass](codecForCustomApplyParamNamesClass, codecForCustomApplyParamNamesClass).codec
   )
-  checkLaws("Codec[CustomApplyParamTypesClass]", CodecTests[CustomApplyParamTypesClass].codec)
-  checkLaws(
+  checkAll("Codec[CustomApplyParamTypesClass]", CodecTests[CustomApplyParamTypesClass].codec)
+  checkAll(
     "Codec[CustomApplyParamTypesClass] via Codec",
     CodecTests[CustomApplyParamTypesClass](codecForCustomApplyParamTypesClass, codecForCustomApplyParamTypesClass).codec
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[Foo]",
     CodecAgreementTests[Foo](
       GenericAutoCodecs.decodeFoo,
@@ -133,7 +133,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[Bar]",
     CodecAgreementTests[Bar](
       GenericAutoCodecs.decodeBar,
@@ -143,7 +143,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[Baz]",
     CodecAgreementTests[Baz](
       GenericAutoCodecs.decodeBaz,
@@ -153,7 +153,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[Qux[Baz]]",
     CodecAgreementTests[Qux[Baz]](
       GenericAutoCodecs.decodeQux[Baz],
@@ -163,7 +163,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[SimpleClass]",
     CodecAgreementTests[SimpleClass](
       GenericAutoCodecs.decodeSimpleClass,
@@ -173,7 +173,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[CustomApplyParamNamesClass]",
     CodecAgreementTests[CustomApplyParamNamesClass](
       GenericAutoCodecs.decodeCustomApplyParamNamesClass,
@@ -183,7 +183,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[CustomApplyParamTypesClass]",
     CodecAgreementTests[CustomApplyParamTypesClass](
       GenericAutoCodecs.decodeCustomApplyParamTypesClass,
@@ -193,7 +193,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[Adt]",
     CodecAgreementTests[Adt](
       GenericAutoCodecs.decodeAdt,
@@ -203,7 +203,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Foo]",
     CodecAgreementTests[Foo](
       codecForFoo,
@@ -213,7 +213,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Bar]",
     CodecAgreementTests[Bar](
       codecForBar,
@@ -223,7 +223,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Baz]",
     CodecAgreementTests[Baz](
       codecForBaz,
@@ -233,7 +233,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Qux[Baz]]",
     CodecAgreementTests[Qux[Baz]](
       codecForQux,
@@ -243,7 +243,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[SimpleClass]",
     CodecAgreementTests[SimpleClass](
       codecForSimpleClass,
@@ -253,7 +253,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[CustomApplyParamNamesClass]",
     CodecAgreementTests[CustomApplyParamNamesClass](
       codecForCustomApplyParamNamesClass,
@@ -263,7 +263,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[CustomApplyParamTypesClass]",
     CodecAgreementTests[CustomApplyParamTypesClass](
       codecForCustomApplyParamTypesClass,
@@ -273,7 +273,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[WithDefaults]",
     CodecAgreementTests[WithDefaults](
       codecForWithDefaults,
@@ -283,7 +283,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Adt]",
     CodecAgreementTests[Adt](
       discriminator.codecForAdt,

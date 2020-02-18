@@ -34,19 +34,19 @@ class TransformMemberNamesSuite extends CirceSuite {
   import TransformMemberNamesExample._
   import TransformMemberNamesSuiteCodecs._
 
-  checkLaws("Codec[Foo]", CodecTests[Foo].codec)
-  checkLaws("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
-  checkLaws("Codec[Bar]", CodecTests[Bar].codec)
-  checkLaws("Codec[Bar] via Codec", CodecTests[Bar](codecForBar, codecForBar).codec)
-  checkLaws("Codec[Baz]", CodecTests[Baz].codec)
-  checkLaws("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
-  checkLaws("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
-  checkLaws("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
+  checkAll("Codec[Foo]", CodecTests[Foo].codec)
+  checkAll("Codec[Foo] via Codec", CodecTests[Foo](codecForFoo, codecForFoo).codec)
+  checkAll("Codec[Bar]", CodecTests[Bar].codec)
+  checkAll("Codec[Bar] via Codec", CodecTests[Bar](codecForBar, codecForBar).codec)
+  checkAll("Codec[Baz]", CodecTests[Baz].codec)
+  checkAll("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
+  checkAll("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
+  checkAll("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
 
-  checkLaws("Codec[User]", CodecTests[User].codec)
-  checkLaws("Codec[User] via Codec", CodecTests[User](User.codecForUser, User.codecForUser).codec)
+  checkAll("Codec[User]", CodecTests[User].codec)
+  checkAll("Codec[User] via Codec", CodecTests[User](User.codecForUser, User.codecForUser).codec)
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Foo]",
     CodecAgreementTests[Foo](
       codecForFoo,
@@ -56,7 +56,7 @@ class TransformMemberNamesSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Bar]",
     CodecAgreementTests[Bar](
       codecForBar,
@@ -66,7 +66,7 @@ class TransformMemberNamesSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Baz]",
     CodecAgreementTests[Baz](
       codecForBaz,
@@ -76,7 +76,7 @@ class TransformMemberNamesSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Qux[Baz]]",
     CodecAgreementTests[Qux[Baz]](
       codecForQux,
