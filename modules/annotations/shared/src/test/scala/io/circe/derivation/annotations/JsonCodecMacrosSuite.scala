@@ -122,12 +122,12 @@ package jsoncodecmacrossuiteaux {
 class JsonCodecMacrosSuite extends CirceSuite {
   import jsoncodecmacrossuiteaux._
 
-  checkLaws("Codec[Simple]", CodecTests[Simple].codec)
-  checkLaws("Codec[Single]", CodecTests[Single].codec)
-  checkLaws("Codec[Typed1[Int]]", CodecTests[Typed1[Int]].codec)
-  checkLaws("Codec[Typed2[Int, Long]]", CodecTests[Typed2[Int, Long]].codec)
-  checkLaws("Codec[Hierarchy]", CodecTests[Hierarchy].codec)
-  checkLaws(
+  checkAll("Codec[Simple]", CodecTests[Simple].codec)
+  checkAll("Codec[Single]", CodecTests[Single].codec)
+  checkAll("Codec[Typed1[Int]]", CodecTests[Typed1[Int]].codec)
+  checkAll("Codec[Typed2[Int, Long]]", CodecTests[Typed2[Int, Long]].codec)
+  checkAll("Codec[Hierarchy]", CodecTests[Hierarchy].codec)
+  checkAll(
     "Codec[SelfRecursiveWithOption]",
     CodecTests[SelfRecursiveWithOption].codec
   )

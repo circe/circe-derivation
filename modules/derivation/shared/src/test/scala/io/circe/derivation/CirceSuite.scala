@@ -5,8 +5,9 @@ import cats.instances.AllInstances
 import cats.syntax.{ AllSyntax, EitherOps }
 import io.circe.testing.{ ArbitraryInstances, EqInstances }
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.scalacheck.{ Checkers, ScalaCheckDrivenPropertyChecks }
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.typelevel.discipline.Laws
+import org.typelevel.discipline.scalatest.FlatSpecDiscipline
 import scala.language.implicitConversions
 
 /**
@@ -14,6 +15,7 @@ import scala.language.implicitConversions
  */
 trait CirceSuite
     extends AnyFlatSpec
+    with FlatSpecDiscipline
     with ScalaCheckDrivenPropertyChecks
     with AllInstances
     with AllSyntax
@@ -23,11 +25,6 @@ trait CirceSuite
     sys.error("Intentionally ambiguous implicit for Equalizer")
 
   implicit def prioritizedCatsSyntaxEither[A, B](eab: Either[A, B]): EitherOps[A, B] = new EitherOps(eab)
-
-  def checkLaws(name: String, ruleSet: Laws#RuleSet): Unit = ruleSet.all.properties.zipWithIndex.foreach {
-    case ((id, prop), 0) => name should s"obey $id" in Checkers.check(prop)
-    case ((id, prop), _) => it should s"obey $id" in Checkers.check(prop)
-  }
 
   def assertEq[A: Eq](expected: A, actual: A): Unit =
     assert(

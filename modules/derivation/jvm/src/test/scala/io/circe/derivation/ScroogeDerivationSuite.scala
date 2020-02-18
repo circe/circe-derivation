@@ -17,15 +17,15 @@ object ScroogeDerivationSuiteCodecs extends Serializable {
 class ScroogeDerivationSuite extends CirceSuite {
   import ScroogeDerivationSuiteCodecs._
 
-  checkLaws("Codec[SomethingStruct]", CodecTests[SomethingStruct].codec)
-  checkLaws(
+  checkAll("Codec[SomethingStruct]", CodecTests[SomethingStruct].codec)
+  checkAll(
     "Codec[SomethingStruct] via Codec",
     CodecTests[SomethingStruct](codecForSomethingStruct, codecForSomethingStruct).codec
   )
-  checkLaws("Codec[BiggerStruct]", CodecTests[BiggerStruct].codec)
-  checkLaws("Codec[BiggerStruct] via Codec", CodecTests[BiggerStruct](codecForBiggerStruct, codecForBiggerStruct).codec)
+  checkAll("Codec[BiggerStruct]", CodecTests[BiggerStruct].codec)
+  checkAll("Codec[BiggerStruct] via Codec", CodecTests[BiggerStruct](codecForBiggerStruct, codecForBiggerStruct).codec)
 
-  checkLaws(
+  checkAll(
     "CodecAgreement[SomethingStruct]",
     CodecAgreementTests[SomethingStruct](
       ScroogeGenericAutoCodecs.decodeSomethingStruct,
@@ -35,7 +35,7 @@ class ScroogeDerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[SomethingStruct]",
     CodecAgreementTests[SomethingStruct](
       codecForSomethingStruct,
@@ -45,7 +45,7 @@ class ScroogeDerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[BiggerStruct]",
     CodecAgreementTests[BiggerStruct](
       codecForBiggerStruct,
