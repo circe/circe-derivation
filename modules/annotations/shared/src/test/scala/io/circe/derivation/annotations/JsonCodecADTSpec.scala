@@ -3,7 +3,8 @@ package io.circe.derivation.annotations
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object JsonCodecADTSpecSamples {
 
@@ -26,7 +27,7 @@ object JsonCodecADTSpecSamples {
   @JsonCodec case class ADTTypedB(b: Int) extends ADTTyped
 }
 
-class JsonCodecADTSpec extends WordSpec with Matchers {
+class JsonCodecADTSpec extends AnyWordSpec with Matchers {
 
   import JsonCodecADTSpecSamples._
 
@@ -37,15 +38,15 @@ class JsonCodecADTSpec extends WordSpec with Matchers {
     "serialize default" in {
       val a1: ADT1 = ADT1A(1)
 
-      a1.asJson.pretty(printer) should be("""{"ADT1A":{"a":1}}""")
-      parse("""{"ADT1A":{"a":1}}""").right.get.as[ADT1] should be(
+      a1.asJson.printWith(printer) should be("""{"ADT1A":{"a":1}}""")
+      parse("""{"ADT1A":{"a":1}}""").flatMap(_.as[ADT1]) should be(
         Right(a1)
       )
 
       val b1: ADT1 = ADT1B(1)
 
-      b1.asJson.pretty(printer) should be("""{"ADT1B":{"b":1}}""")
-      parse("""{"ADT1B":{"b":1}}""").right.get.as[ADT1] should be(
+      b1.asJson.printWith(printer) should be("""{"ADT1B":{"b":1}}""")
+      parse("""{"ADT1B":{"b":1}}""").flatMap(_.as[ADT1]) should be(
         Right(b1)
       )
     }
@@ -53,27 +54,27 @@ class JsonCodecADTSpec extends WordSpec with Matchers {
     "serialize discriminator custom fieldname" in {
       val a1: ADT1Custom = ADT1CustomA(1)
 
-      a1.asJson.pretty(printer) should be("""{"a":1,"_type":"ADT1CustomA"}""")
-      parse("""{"a":1,"_type":"ADT1CustomA"}""").right.get.as[ADT1Custom] should be(Right(a1))
+      a1.asJson.printWith(printer) should be("""{"a":1,"_type":"ADT1CustomA"}""")
+      parse("""{"a":1,"_type":"ADT1CustomA"}""").flatMap(_.as[ADT1Custom]) should be(Right(a1))
 
       val b1: ADT1Custom = ADT1CustomB(1)
 
-      b1.asJson.pretty(printer) should be("""{"b":1,"_type":"ADT1CustomB"}""")
-      parse("""{"b":1,"_type":"ADT1CustomB"}""").right.get.as[ADT1Custom] should be(Right(b1))
+      b1.asJson.printWith(printer) should be("""{"b":1,"_type":"ADT1CustomB"}""")
+      parse("""{"b":1,"_type":"ADT1CustomB"}""").flatMap(_.as[ADT1Custom]) should be(Right(b1))
     }
 
     "serialize discriminator typed" in {
       val a1: ADTTyped = ADTTypedA(1)
 
-      a1.asJson.pretty(printer) should be("""{"ADTTypedA":{"a":1}}""")
-      parse("""{"ADTTypedA":{"a":1}}""").right.get.as[ADTTyped] should be(
+      a1.asJson.printWith(printer) should be("""{"ADTTypedA":{"a":1}}""")
+      parse("""{"ADTTypedA":{"a":1}}""").flatMap(_.as[ADTTyped]) should be(
         Right(a1)
       )
 
       val b1: ADTTyped = ADTTypedB(1)
 
-      b1.asJson.pretty(printer) should be("""{"ADTTypedB":{"b":1}}""")
-      parse("""{"ADTTypedB":{"b":1}}""").right.get.as[ADTTyped] should be(
+      b1.asJson.printWith(printer) should be("""{"ADTTypedB":{"b":1}}""")
+      parse("""{"ADTTypedB":{"b":1}}""").flatMap(_.as[ADTTyped]) should be(
         Right(b1)
       )
     }
