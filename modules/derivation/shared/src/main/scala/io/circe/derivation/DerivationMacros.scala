@@ -447,9 +447,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               )
           }.unzip
 
-        val resultErrors: List[Tree] = resultNames.map { resultName =>
-          q"errors($resultName)"
-        }
+        val resultErrors: List[Tree] = resultNames.map(resultName => q"errors($resultName)")
 
         val resultAccumulating: Tree = q"""
           {
@@ -937,9 +935,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               )
           }.unzip
 
-        val resultErrors: List[Tree] = resultNames.map { resultName =>
-          q"errors($resultName)"
-        }
+        val resultErrors: List[Tree] = resultNames.map(resultName => q"errors($resultName)")
 
         val resultAccumulating: Tree = q"""
           {

@@ -51,15 +51,9 @@ trait CodecAgreementTests[A] extends Laws {
   ): RuleSet = new DefaultRuleSet(
     name = "codec-agreement",
     parent = None,
-    "agreement" -> Prop.forAll { (a: A) =>
-      laws.codecsAgree(a)
-    },
-    "new decodes old" -> Prop.forAll { (a: A) =>
-      laws.newDecodesOld(a)
-    },
-    "old decodes new" -> Prop.forAll { (a: A) =>
-      laws.oldDecodesNew(a)
-    }
+    "agreement" -> Prop.forAll((a: A) => laws.codecsAgree(a)),
+    "new decodes old" -> Prop.forAll((a: A) => laws.newDecodesOld(a)),
+    "old decodes new" -> Prop.forAll((a: A) => laws.oldDecodesNew(a))
   )
 }
 
