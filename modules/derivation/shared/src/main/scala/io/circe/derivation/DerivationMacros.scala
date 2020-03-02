@@ -766,10 +766,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         {
           val field = c.downField($realFieldName)
 
-          if ((field.failed || field.focus.exists(_.isNull)) && $useDefaults) {
-            _root_.scala.Right(${member.default.get})
-          } else {
-            ${repr.decoder(member.tpe).name}.tryDecode(field)
+          ${repr.decoder(member.tpe).name}.tryDecode(field) match {
+            case r @ _root_.scala.Right(_) if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNone(r) => r
+            case l @ _root_.scala.Left(_) if field.succeeded && !field.focus.exists(_.isNull) => l
+            case r => _root_.scala.Right($defaultValue)
           }
         }
         """
@@ -792,10 +792,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         {
           val field = c.downField($realFieldName)
 
-          if (field.failed && $useDefaults) {
-            _root_.cats.data.Validated.Valid(${member.default.get})
-          } else {
-            ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field)
+          ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field) match {
+            case v @ _root_.cats.data.Validated.Valid(_)
+              if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNoneAccumulating(v) => v
+            case i @ _root_.cats.data.Validated.Invalid(_) if field.succeeded && !field.focus.exists(_.isNull) => i
+            case v => _root_.cats.data.Validated.Valid($defaultValue)
           }
         }
         """
@@ -984,4 +985,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       }
     }
   }
+}
+
+object DerivationMacros {
+
+  /**
+   * Not intended for public use.
+   */
+  def isKeyMissingNone[A](value: Decoder.Result[A]): Boolean = value.eq(Decoder.keyMissingNone)
+
+  /**
+   * Not intended for public use.
+   */
+  def isKeyMissingNoneAccumulating[A](value: Decoder.AccumulatingResult[A]): Boolean =
+    value.eq(Decoder.keyMissingNoneAccumulating)
 }
