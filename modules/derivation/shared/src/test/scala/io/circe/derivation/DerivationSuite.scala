@@ -1,5 +1,6 @@
 package io.circe.derivation
 
+import cats.data.Validated
 import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples._
 import io.circe.syntax._
@@ -45,6 +46,10 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val decodeWithDefaults: Decoder[WithDefaults] = deriveDecoder(identity, true, None)
   implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
   val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
+
+  implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, true, None)
+  implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, None)
+  val codecForWithJson: Codec[WithJson] = deriveCodec(identity, true, None)
 
   implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder
   implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder
@@ -284,6 +289,16 @@ class DerivationSuite extends CirceSuite {
   )
 
   checkAll(
+    "CodecAgreementWithCodec[WithJson]",
+    CodecAgreementTests[WithJson](
+      codecForWithJson,
+      codecForWithJson,
+      decodeWithJson,
+      encodeWithJson
+    ).codecAgreement
+  )
+
+  checkAll(
     "CodecAgreementWithCodec[Adt]",
     CodecAgreementTests[Adt](
       discriminator.codecForAdt,
@@ -294,18 +309,25 @@ class DerivationSuite extends CirceSuite {
   )
 
   "useDefaults" should "cause defaults to be used for missing fields" in {
-    val expectedBothDefaults = Right(WithDefaults(0, 1, List("")))
-    val expectedOneDefault = Right(WithDefaults(0, 1, Nil))
+    val expectedBothDefaults = WithDefaults(0, 1, List(""))
+    val expectedOneDefault = WithDefaults(0, 1, Nil)
 
     val j1 = Json.obj("i" := 0)
     val j2 = Json.obj("i" := 0, "k" := List.empty[String])
     val j3 = Json.obj("i" := 0, "k" := Json.Null)
 
-    assert(decodeWithDefaults.decodeJson(j1) === expectedBothDefaults)
-    assert(codecForWithDefaults.decodeJson(j1) === expectedBothDefaults)
-    assert(decodeWithDefaults.decodeJson(j2) === expectedOneDefault)
-    assert(codecForWithDefaults.decodeJson(j2) === expectedOneDefault)
-    assert(decodeWithDefaults.decodeJson(j3) === expectedBothDefaults)
-    assert(codecForWithDefaults.decodeJson(j3) === expectedBothDefaults)
+    assert(decodeWithDefaults.decodeJson(j1) === Right(expectedBothDefaults))
+    assert(codecForWithDefaults.decodeJson(j1) === Right(expectedBothDefaults))
+    assert(decodeWithDefaults.decodeJson(j2) === Right(expectedOneDefault))
+    assert(codecForWithDefaults.decodeJson(j2) === Right(expectedOneDefault))
+    assert(decodeWithDefaults.decodeJson(j3) === Right(expectedBothDefaults))
+    assert(codecForWithDefaults.decodeJson(j3) === Right(expectedBothDefaults))
+
+    assert(decodeWithDefaults.decodeAccumulating(j1.hcursor) === Validated.validNel(expectedBothDefaults))
+    assert(codecForWithDefaults.decodeAccumulating(j1.hcursor) === Validated.validNel(expectedBothDefaults))
+    assert(decodeWithDefaults.decodeAccumulating(j2.hcursor) === Validated.validNel(expectedOneDefault))
+    assert(codecForWithDefaults.decodeAccumulating(j2.hcursor) === Validated.validNel(expectedOneDefault))
+    assert(decodeWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
+    assert(codecForWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
   }
 }
