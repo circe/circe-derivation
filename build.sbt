@@ -173,6 +173,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-testing" % circeVersion,
       "org.scalacheck" %%% "scalacheck" % scalaCheckVersion,
       "org.typelevel" %%% "cats-core" % catsVersion
     )
