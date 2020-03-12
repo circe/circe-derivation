@@ -21,7 +21,7 @@ val circeVersion = "0.13.0"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.12.0-M5"
 val scalaCheckVersion = "1.14.3"
-val scalaJavaTimeVersion = "2.0.0-RC3"
+val scalaJavaTimeVersion = "2.0.0-RC5"
 
 def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -197,7 +197,7 @@ lazy val examplesScrooge = project
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value))
         Seq(
-          "com.twitter" %% "scrooge-core" % "20.1.0",
+          "com.twitter" %% "scrooge-core" % "20.3.0",
           "org.apache.thrift" % "libthrift" % "0.10.0"
         )
       else Nil
