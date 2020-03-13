@@ -32,17 +32,17 @@ object TransformConstructorNamesSuite extends Serializable {
 class TransformConstructorNamesSuite extends CirceSuite {
   import TransformConstructorNamesSuite._
 
-  checkLaws("Codec[Adt]", CodecTests[Adt].codec)
-  checkLaws("Codec[Adt] via Codec", CodecTests[Adt](codecForAdt, codecForAdt).codec)
-  checkLaws(
+  checkAll("Codec[Adt]", CodecTests[Adt].codec)
+  checkAll("Codec[Adt] via Codec", CodecTests[Adt](codecForAdt, codecForAdt).codec)
+  checkAll(
     "Codec[Adt] via Codec with discriminator",
     CodecTests[Adt](discriminator.codecForAdt, discriminator.codecForAdt).codec
   )
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Adt]",
     CodecAgreementTests[Adt](codecForAdt, codecForAdt, decodeAdt, encodeAdt).codecAgreement
   )
-  checkLaws(
+  checkAll(
     "CodecAgreementWithCodec[Adt] with discriminator",
     CodecAgreementTests(
       discriminator.codecForAdt,

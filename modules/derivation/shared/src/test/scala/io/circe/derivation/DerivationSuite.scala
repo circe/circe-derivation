@@ -47,9 +47,9 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, identity, None)
   val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, identity, true, None)
 
-  implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, true, None)
-  implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, None)
-  val codecForWithJson: Codec[WithJson] = deriveCodec(identity, true, None)
+  implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, identity, true, None)
+  implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, identity, None)
+  val codecForWithJson: Codec[WithJson] = deriveCodec(identity, identity, true, None)
 
   implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder
   implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder
