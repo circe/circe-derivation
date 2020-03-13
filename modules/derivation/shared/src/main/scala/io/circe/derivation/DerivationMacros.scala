@@ -318,48 +318,65 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
+    // We don't _really_ care about the order but want to be sure its stable here.
+    val subclassList: List[Symbol] = subclasses.toList
+
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
 
-    val objectWrapperCases: List[Tree] = subclasses.map { s =>
-      val value = transformName(nameOf(s))
+    val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
+      case (s, i) =>
+        val name = TermName(s"name$i")
+        val value = transformName(nameOf(s))
+        (name, q"private[this] val $name = $value")
+    }.unzip
 
-      cq"""nme if nme == $value => c.get(nme)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
-    }.toList
-
-    val discriminatorCases: List[Tree] = subclasses.map { s =>
-      val value = transformName(nameOf(s))
-
-      cq"""nme if nme == $value => c.as[${s.asType}].asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
-    }.toList
+    val discriminatorCases: List[Tree] = subclassList
+      .zip(transformedNameNames)
+      .map {
+        case (s, value) =>
+          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      }
+      .toList
 
     c.Expr[Decoder[T]](
       q"""
-    ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
-      case _root_.scala.None =>
         new _root_.io.circe.Decoder[$tpe] {
-          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-            val ks = c.keys.toList.flatMap(_.toList)
+          ..$transformedNameDefs
 
-            if (ks.lengthCompare(1) == 0) {
-              ks.head match {
-                case ..$objectWrapperCases
-                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
-              }
-            } else {
-              _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
+          private[this] def failedDecoder =
+            _root_.io.circe.Decoder.failedWithMessage[$tpe](${tpe.typeSymbol.name.decodedName.toString})
+
+          private[this] val wrapped: _root_.io.circe.Decoder[$tpe] =
+            ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
+              case _root_.scala.Some(typeFieldName) =>
+                _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
+                  case ..$discriminatorCases
+                  case _ => failedDecoder
+                }
+              case _root_.scala.None =>
+                _root_.io.circe.Decoder[_root_.io.circe.JsonObject].flatMap {
+                  case obj if obj.size == 1 =>
+                    val key = obj.keys.toList.head
+                    var failed = false
+
+                    val constructorDecoder = key match {
+                      case ..$discriminatorCases
+                      case _ => failed = true; failedDecoder
+                    }
+
+                    if (failed) constructorDecoder else constructorDecoder.at(key)
+                  case _ => failedDecoder
+                }
             }
-          }
+
+          final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
+            wrapped.apply(c)
+
+          final override def decodeAccumulating(
+            c: _root_.io.circe.HCursor
+          ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = wrapped.decodeAccumulating(c)
         }
-      case _root_.scala.Some(typeFieldName) =>
-        new _root_.io.circe.Decoder[$tpe] {
-          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
-            c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
-              case ..$discriminatorCases
-              case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
-            }
-        }
-    }
-    """
+      """
     )
   }
 
@@ -690,21 +707,27 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
+    // We don't _really_ care about the order but want to be sure its stable here.
+    val subclassList: List[Symbol] = subclasses.toList
+
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
 
-    val objectWrapperCases: List[Tree] = subclasses.map { s =>
-      val value = transformName(nameOf(s))
+    val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
+      case (s, i) =>
+        val name = TermName(s"name$i")
+        val value = transformName(nameOf(s))
+        (name, q"private[this] val $name = $value")
+    }.unzip
 
-      cq"""nme if nme == $value => c.get(nme)(_root_.io.circe.Decoder[${s.asType}]).asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
-    }.toList
+    val discriminatorCases: List[Tree] = subclassList
+      .zip(transformedNameNames)
+      .map {
+        case (s, value) =>
+          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      }
+      .toList
 
-    val discriminatorCases: List[Tree] = subclasses.map { s =>
-      val value = transformName(nameOf(s))
-
-      cq"""nme if nme == $value => c.as[${s.asType}].asInstanceOf[_root_.io.circe.Decoder.Result[$tpe]]"""
-    }.toList
-
-    val encoderCases = subclasses.map { s =>
+    val encoderCases = subclassList.map { s =>
       val subTpe = s.asClass.toType
       val name = transformName(nameOf(s))
 
@@ -723,42 +746,47 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     c.Expr[Codec.AsObject[T]](
       q"""
-    ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
-      case _root_.scala.None =>
         new _root_.io.circe.Codec.AsObject[$tpe] {
-          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = {
-            val ks = c.keys.toList.flatMap(_.toList)
+          ..$transformedNameDefs
 
-            if (ks.lengthCompare(1) == 0) {
-              ks.head match {
-                case ..$objectWrapperCases
-                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
-              }
-            } else {
-              _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
+          private[this] def failedDecoder =
+            _root_.io.circe.Decoder.failedWithMessage[$tpe](${tpe.typeSymbol.name.decodedName.toString})
+
+          private[this] val wrapped: _root_.io.circe.Decoder[$tpe] =
+            ($discriminator: _root_.scala.Option[_root_.java.lang.String]) match {
+              case _root_.scala.Some(typeFieldName) =>
+                _root_.io.circe.Decoder[_root_.java.lang.String].prepare(_.downField(typeFieldName)).flatMap {
+                  case ..$discriminatorCases
+                  case _ => failedDecoder
+                }
+              case _root_.scala.None =>
+                _root_.io.circe.Decoder[_root_.io.circe.JsonObject].flatMap {
+                  case obj if obj.size == 1 =>
+                    val key = obj.keys.toList.head
+                    var failed = false
+
+                    val constructorDecoder = key match {
+                      case ..$discriminatorCases
+                      case _ => failed = true; failedDecoder
+                    }
+
+                    if (failed) constructorDecoder else constructorDecoder.at(key)
+                  case _ => failedDecoder
+                }
             }
-          }
-          def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
-            case ..$encoderCases
-          }
-        }
-      case _root_.scala.Some(typeFieldName) =>
-        new _root_.io.circe.Codec.AsObject[$tpe] {
-          private[this] val decoder = new _root_.io.circe.Decoder[$tpe] {
-            def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
-              c.get(typeFieldName)(_root_.io.circe.Decoder[_root_.java.lang.String]).flatMap {
-                case ..$discriminatorCases
-                case _ => _root_.scala.Left(_root_.io.circe.DecodingFailure(${tpe.typeSymbol.name.decodedName.toString}, c.history))
-              }
-          }
 
-          def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = decoder.apply(c)
-          def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
+          final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] =
+            wrapped.apply(c)
+
+          final override def decodeAccumulating(
+            c: _root_.io.circe.HCursor
+          ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = wrapped.decodeAccumulating(c)
+
+          final def encodeObject(a: $tpe): _root_.io.circe.JsonObject = a match {
             case ..$encoderCases
           }
         }
-    }
-    """
+      """
     )
   }
 
