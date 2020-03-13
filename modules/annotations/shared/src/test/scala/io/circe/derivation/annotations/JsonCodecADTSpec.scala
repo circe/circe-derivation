@@ -25,6 +25,18 @@ object JsonCodecADTSpecSamples {
 
   @JsonCodec case class ADTTypedA(a: Int) extends ADTTyped
   @JsonCodec case class ADTTypedB(b: Int) extends ADTTyped
+
+  @JsonCodec(Configuration.default.withKebabCaseConstructorNames)
+  sealed trait ADTTransformed
+
+  @JsonCodec case class ADTTransformed1(a: Int) extends ADTTransformed
+  @JsonCodec case class ADTTransformed2(b: Int) extends ADTTransformed
+
+  @JsonCodec(Configuration.default.withSnakeCaseConstructorNames.withDiscriminator("_type"))
+  sealed trait ADTSnakeDiscriminator
+
+  @JsonCodec case class ADTSnakeDiscriminatorA(a: Int) extends ADTSnakeDiscriminator
+  @JsonCodec case class ADTSnakeDiscriminatorB(b: Int) extends ADTSnakeDiscriminator
 }
 
 class JsonCodecADTSpec extends AnyWordSpec with Matchers {
@@ -77,6 +89,30 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
       parse("""{"ADTTypedB":{"b":1}}""").flatMap(_.as[ADTTyped]) should be(
         Right(b1)
       )
+    }
+
+    "transform constructor names" in {
+      val a1: ADTTransformed = ADTTransformed1(1)
+
+      a1.asJson.printWith(printer) should be("""{"adt-transformed1":{"a":1}}""")
+      parse("""{"adt-transformed1":{"a":1}}""").right.get.as[ADTTransformed] should be(Right(a1))
+
+      val b1: ADTTransformed = ADTTransformed2(1)
+
+      b1.asJson.printWith(printer) should be("""{"adt-transformed2":{"b":1}}""")
+      parse("""{"adt-transformed2":{"b":1}}""").right.get.as[ADTTransformed] should be(Right(b1))
+    }
+
+    "transform constructor names with a discriminator" in {
+      val a1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorA(1)
+
+      a1.asJson.printWith(printer) should be("""{"a":1,"_type":"adt_snake_discriminator_a"}""")
+      parse("""{"a":1,"_type":"adt_snake_discriminator_a"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(a1))
+
+      val b1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorB(1)
+
+      b1.asJson.printWith(printer) should be("""{"b":1,"_type":"adt_snake_discriminator_b"}""")
+      parse("""{"b":1,"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(b1))
     }
   }
 }

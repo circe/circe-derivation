@@ -1,7 +1,7 @@
 package io.circe.derivation
 
-import cats.data.Validated
-import io.circe.{ Codec, Decoder, Encoder, Json }
+import cats.data.{ NonEmptyList, Validated }
+import io.circe.{ Codec, CursorOp, Decoder, Encoder, Json }
 import io.circe.examples._
 import io.circe.syntax._
 import io.circe.testing.CodecTests
@@ -92,12 +92,30 @@ class DerivationSuite extends CirceSuite {
     assert(decodeEmptyCaseClass.decodeJson(json).isRight === json.isObject)
   }
 
+  it should "fail to decode ADTs with an invalid object wrapper" in {
+    assert(decodeAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
+    assert(discriminator.decodeAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
+  }
+
   "deriveCodec" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
     case class EmptyCaseClass()
 
     val codecForEmptyCaseClass: Codec[EmptyCaseClass] = deriveCodec
 
     assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+  }
+
+  it should "fail to decode ADTs with an invalid object wrapper" in {
+    assert(codecForAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
+    assert(discriminator.codecForAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
   checkAll("Codec[Foo]", CodecTests[Foo].codec)
@@ -329,5 +347,23 @@ class DerivationSuite extends CirceSuite {
     assert(codecForWithDefaults.decodeAccumulating(j2.hcursor) === Validated.validNel(expectedOneDefault))
     assert(decodeWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
     assert(codecForWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
+  }
+
+  "Derived ADT decoders" should "preserve error accumulation" in {
+    val j = Json.obj("AdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
+    val histories = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("i"), CursorOp.DownField("AdtFoo")),
+      List(CursorOp.DownField("s"), CursorOp.DownField("AdtFoo"))
+    )
+    assert(decodeAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
+  }
+
+  "Derived ADT codecs" should "preserve error accumulation" in {
+    val j = Json.obj("AdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
+    val histories = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("i"), CursorOp.DownField("AdtFoo")),
+      List(CursorOp.DownField("s"), CursorOp.DownField("AdtFoo"))
+    )
+    assert(codecForAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 }
