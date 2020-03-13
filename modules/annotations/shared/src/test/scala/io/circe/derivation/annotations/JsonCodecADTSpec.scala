@@ -94,24 +94,24 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
     "transform constructor names" in {
       val a1: ADTTransformed = ADTTransformed1(1)
 
-      a1.asJson.pretty(printer) should be("""{"adt-transformed1":{"a":1}}""")
+      a1.asJson.printWith(printer) should be("""{"adt-transformed1":{"a":1}}""")
       parse("""{"adt-transformed1":{"a":1}}""").right.get.as[ADTTransformed] should be(Right(a1))
 
       val b1: ADTTransformed = ADTTransformed2(1)
 
-      b1.asJson.pretty(printer) should be("""{"adt-transformed2":{"b":1}}""")
+      b1.asJson.printWith(printer) should be("""{"adt-transformed2":{"b":1}}""")
       parse("""{"adt-transformed2":{"b":1}}""").right.get.as[ADTTransformed] should be(Right(b1))
     }
 
     "transform constructor names with a discriminator" in {
       val a1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorA(1)
 
-      a1.asJson.pretty(printer) should be("""{"a":1,"_type":"adt_snake_discriminator_a"}""")
+      a1.asJson.printWith(printer) should be("""{"a":1,"_type":"adt_snake_discriminator_a"}""")
       parse("""{"a":1,"_type":"adt_snake_discriminator_a"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(a1))
 
       val b1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorB(1)
 
-      b1.asJson.pretty(printer) should be("""{"b":1,"_type":"adt_snake_discriminator_b"}""")
+      b1.asJson.printWith(printer) should be("""{"b":1,"_type":"adt_snake_discriminator_b"}""")
       parse("""{"b":1,"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(b1))
     }
   }
