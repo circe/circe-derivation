@@ -1,7 +1,7 @@
 package io.circe.derivation
 
-import cats.data.Validated
-import io.circe.{ Codec, Decoder, Encoder, Json }
+import cats.data.{ NonEmptyList, Validated }
+import io.circe.{ Codec, CursorOp, Decoder, Encoder, Json }
 import io.circe.examples._
 import io.circe.syntax._
 import io.circe.testing.CodecTests
@@ -347,5 +347,15 @@ class DerivationSuite extends CirceSuite {
     assert(codecForWithDefaults.decodeAccumulating(j2.hcursor) === Validated.validNel(expectedOneDefault))
     assert(decodeWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
     assert(codecForWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
+  }
+
+  "ADT decoding" should "preserve error accumulation" in {
+    val j = Json.obj("AdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
+    val histories = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("i"), CursorOp.DownField("AdtFoo")),
+      List(CursorOp.DownField("s"), CursorOp.DownField("AdtFoo"))
+    )
+    assert(decodeAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
+    assert(codecForAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 }
