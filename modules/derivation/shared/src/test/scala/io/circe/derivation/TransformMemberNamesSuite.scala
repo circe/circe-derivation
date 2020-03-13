@@ -7,25 +7,24 @@ import io.circe.syntax._
 import io.circe.testing.CodecTests
 
 object TransformMemberNamesSuiteCodecs extends Serializable {
-  implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, identity, true, None)
-  implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase, identity, None)
-  val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase, identity, true, None)
+  implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase, None)
+  val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase, true, None)
 
-  implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase, identity, true, None)
-  implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder(renaming.snakeCase, identity, None)
-  val codecForBar: Codec.AsObject[Bar] = deriveCodec(renaming.snakeCase, identity, true, None)
+  implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder(renaming.snakeCase, None)
+  val codecForBar: Codec.AsObject[Bar] = deriveCodec(renaming.snakeCase, true, None)
 
-  implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase, identity, true, None)
-  implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase, identity, None)
-  val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase, identity, true, None)
+  implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase, None)
+  val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase, true, None)
 
   implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] =
-    deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), identity, true, None)
+    deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), true, None)
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] =
-    deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), identity, None)
+    deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), None)
   def codecForQux[A: Decoder: Encoder]: Codec.AsObject[Qux[A]] = deriveCodec(
     renaming.replaceWith("aa" -> "1", "bb" -> "2"),
-    identity,
     true,
     None
   )

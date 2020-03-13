@@ -232,50 +232,44 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     """
 
   def materializeDecoder[T: c.WeakTypeTag]: c.Expr[Decoder[T]] =
-    materializeDecoderImpl[T](None, None, trueExpression, defaultDiscriminator)
+    materializeDecoderImpl[T](None, trueExpression, defaultDiscriminator)
 
   def materializeEncoder[T: c.WeakTypeTag]: c.Expr[Encoder.AsObject[T]] =
-    materializeEncoderImpl[T](None, None, defaultDiscriminator)
+    materializeEncoderImpl[T](None, defaultDiscriminator)
 
   def materializeCodec[T: c.WeakTypeTag]: c.Expr[Codec.AsObject[T]] =
-    materializeCodecImpl[T](None, None, trueExpression, defaultDiscriminator)
+    materializeCodecImpl[T](None, trueExpression, defaultDiscriminator)
 
   def materializeDecoderWithTransformNames[T: c.WeakTypeTag](
-    transformMemberNames: c.Expr[String => String],
-    transformConstructorNames: c.Expr[String => String],
+    transformNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Decoder[T]] =
     materializeDecoderImpl[T](
-      Some(transformMemberNames),
-      Some(transformConstructorNames),
+      Some(transformNames),
       useDefaults,
       discriminator
     )
 
   def materializeEncoderWithTransformNames[T: c.WeakTypeTag](
-    transformMemberNames: c.Expr[String => String],
-    transformConstructorNames: c.Expr[String => String],
+    transformNames: c.Expr[String => String],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] =
-    materializeEncoderImpl[T](Some(transformMemberNames), Some(transformConstructorNames), discriminator)
+    materializeEncoderImpl[T](Some(transformNames), discriminator)
 
   def materializeCodecWithTransformNames[T: c.WeakTypeTag](
-    transformMemberNames: c.Expr[String => String],
-    transformConstructorNames: c.Expr[String => String],
+    transformNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Codec.AsObject[T]] =
     materializeCodecImpl[T](
-      Some(transformMemberNames),
-      Some(transformConstructorNames),
+      Some(transformNames),
       useDefaults,
       discriminator
     )
 
   private[this] def materializeCodecImpl[T: c.WeakTypeTag](
-    transformMemberNames: Option[c.Expr[String => String]],
-    transformConstructorNames: Option[c.Expr[String => String]],
+    transformNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Codec.AsObject[T]] = {
@@ -284,13 +278,13 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
       materializeCodecCaseClassImpl[T](
-        transformMemberNames,
+        transformNames,
         useDefaults,
         discriminator
       )
     } else {
       materializeCodecTraitImpl[T](
-        transformConstructorNames,
+        transformNames,
         useDefaults,
         discriminator,
         subclasses
@@ -299,8 +293,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
-    transformMemberNames: Option[c.Expr[String => String]],
-    transformConstructorNames: Option[c.Expr[String => String]],
+    transformNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Decoder[T]] = {
@@ -308,10 +301,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
-      materializeDecoderCaseClassImpl[T](transformMemberNames, useDefaults)
+      materializeDecoderCaseClassImpl[T](transformNames, useDefaults)
     } else {
       materializeDecoderTraitImpl[T](
-        transformConstructorNames,
+        transformNames,
         subclasses,
         discriminator
       )
@@ -638,18 +631,17 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   private[this] def materializeEncoderImpl[T: c.WeakTypeTag](
-    transformMemberNames: Option[c.Expr[String => String]],
-    transformConstructorNames: Option[c.Expr[String => String]],
+    transformNames: Option[c.Expr[String => String]],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
     // we manage to work on ADT lets check the subclasses
     val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
     if (subclasses.isEmpty) {
-      materializeEncoderCaseClassImpl[T](transformMemberNames)
+      materializeEncoderCaseClassImpl[T](transformNames)
     } else {
       materializeEncoderTraitImpl[T](
-        transformConstructorNames,
+        transformNames,
         subclasses,
         discriminator
       )

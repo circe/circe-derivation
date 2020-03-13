@@ -43,13 +43,13 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeCustomApplyParamTypesClass: Encoder[CustomApplyParamTypesClass] = deriveEncoder
   val codecForCustomApplyParamTypesClass: Codec[CustomApplyParamTypesClass] = deriveCodec
 
-  implicit val decodeWithDefaults: Decoder[WithDefaults] = deriveDecoder(identity, identity, true, None)
-  implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, identity, None)
-  val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, identity, true, None)
+  implicit val decodeWithDefaults: Decoder[WithDefaults] = deriveDecoder(identity, true, None)
+  implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
+  val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
 
-  implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, identity, true, None)
-  implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, identity, None)
-  val codecForWithJson: Codec[WithJson] = deriveCodec(identity, identity, true, None)
+  implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, true, None)
+  implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, None)
+  val codecForWithJson: Codec[WithJson] = deriveCodec(identity, true, None)
 
   implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder
   implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder
@@ -66,18 +66,18 @@ object DerivationSuiteCodecs extends Serializable {
 
   object discriminator {
     val typeField = Some("_type")
-    implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, identity, false, typeField)
-    implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder(identity, identity, typeField)
+    implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtFoo: Encoder.AsObject[AdtFoo] = deriveEncoder(identity, typeField)
 
-    implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, identity, false, typeField)
-    implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, identity, typeField)
+    implicit val decodeAdtBar: Decoder[AdtBar] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtBar: Encoder.AsObject[AdtBar] = deriveEncoder(identity, typeField)
 
-    implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder(identity, identity, false, typeField)
-    implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder(identity, identity, typeField)
+    implicit val decodeAdtQux: Decoder[AdtQux.type] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdtQux: Encoder.AsObject[AdtQux.type] = deriveEncoder(identity, typeField)
 
-    implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, identity, false, typeField)
-    implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, identity, typeField)
-    val codecForAdt: Codec[Adt] = deriveCodec(identity, identity, false, typeField)
+    implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
+    implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
+    val codecForAdt: Codec[Adt] = deriveCodec(identity, false, typeField)
   }
 }
 
