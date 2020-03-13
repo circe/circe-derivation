@@ -544,7 +544,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
                 if (noSerializeDefault && defaultValue.isDefined) {
                   q"""
-                    if(a.$name==${defaultValue.get}) _root_.scala.None else
+                    if(a.$name == ${defaultValue.get}) _root_.scala.None else
                       _root_.scala.Some(_root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
                         $realName, $instanceName.apply(a.$name)
                     ))"""
@@ -880,7 +880,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
                 if (noSerializeDefault && defaultValue.isDefined) {
                   q"""
-                    if(a.$name==${defaultValue.get}) _root_.scala.None else
+                    if(a.$name == ${defaultValue.get}) _root_.scala.None else
                       _root_.scala.Some(_root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
                         $realName, $instanceName.apply(a.$name)
                     ))"""
