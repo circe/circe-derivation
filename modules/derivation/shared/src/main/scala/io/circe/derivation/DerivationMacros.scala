@@ -251,11 +251,25 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       discriminator
     )
 
+  def materializeDecoderWithTransformNamesAndDefaults[T: c.WeakTypeTag](
+    transformNames: c.Expr[String => String]
+  ): c.Expr[Decoder[T]] =
+    materializeDecoderImpl[T](
+      Some(transformNames),
+      trueExpression,
+      defaultDiscriminator
+    )
+
   def materializeEncoderWithTransformNames[T: c.WeakTypeTag](
     transformNames: c.Expr[String => String],
     discriminator: c.Expr[Option[String]]
   ): c.Expr[Encoder.AsObject[T]] =
     materializeEncoderImpl[T](Some(transformNames), discriminator)
+
+  def materializeEncoderWithTransformNamesAndDefaults[T: c.WeakTypeTag](
+    transformNames: c.Expr[String => String]
+  ): c.Expr[Encoder.AsObject[T]] =
+    materializeEncoderImpl[T](Some(transformNames), defaultDiscriminator)
 
   def materializeCodecWithTransformNames[T: c.WeakTypeTag](
     transformNames: c.Expr[String => String],
@@ -266,6 +280,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       Some(transformNames),
       useDefaults,
       discriminator
+    )
+
+  def materializeCodecWithTransformNamesAndDefaults[T: c.WeakTypeTag](
+    transformNames: c.Expr[String => String]
+  ): c.Expr[Codec.AsObject[T]] =
+    materializeCodecImpl[T](
+      Some(transformNames),
+      trueExpression,
+      defaultDiscriminator
     )
 
   private[this] def materializeCodecImpl[T: c.WeakTypeTag](
