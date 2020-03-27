@@ -831,7 +831,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           ${repr.decoder(member.tpe).name}.tryDecode(field) match {
             case r @ _root_.scala.Right(_) if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNone(r) => r
             case l @ _root_.scala.Left(_) if field.succeeded && !field.focus.exists(_.isNull) => l
-            case r => _root_.scala.Right($defaultValue)
+            case r @ _ => _root_.scala.Right($defaultValue)
           }
         }
         """
@@ -858,7 +858,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             case v @ _root_.cats.data.Validated.Valid(_)
               if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNoneAccumulating(v) => v
             case i @ _root_.cats.data.Validated.Invalid(_) if field.succeeded && !field.focus.exists(_.isNull) => i
-            case v => _root_.cats.data.Validated.Valid($defaultValue)
+            case v @ _ => _root_.cats.data.Validated.Valid($defaultValue)
           }
         }
         """
