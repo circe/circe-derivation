@@ -564,12 +564,12 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         // we manage default serialization
         val fields: List[Tree] = repr.paramLists.flatten.map {
           case Member(
-              name,
-              decodedName,
-              tpe,
-              keyName,
-              defaultValue,
-              noSerializeDefault
+                name,
+                decodedName,
+                tpe,
+                keyName,
+                defaultValue,
+                noSerializeDefault
               ) =>
             repr.encoder(tpe) match {
               case Instance(_, _, instanceName) =>
@@ -910,12 +910,12 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         // we manage default serialization
         val fields: List[Tree] = repr.paramLists.flatten.map {
           case Member(
-              name,
-              decodedName,
-              tpe,
-              keyName,
-              defaultValue,
-              noSerializeDefault
+                name,
+                decodedName,
+                tpe,
+                keyName,
+                defaultValue,
+                noSerializeDefault
               ) =>
             repr.encoder(tpe) match {
               case Instance(_, _, instanceName) =>

@@ -41,8 +41,7 @@ object CodecAgreementLaws {
 trait CodecAgreementTests[A] extends Laws {
   def laws: CodecAgreementLaws[A]
 
-  def codecAgreement(
-    implicit
+  def codecAgreement(implicit
     arbitraryA: Arbitrary[A],
     shrinkA: Shrink[A],
     eqA: Eq[A],

@@ -147,7 +147,8 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
       else Nil
     ),
     scalacOptions ++= (
-      if (priorTo2_13(scalaVersion.value)) Nil else Seq("-Ymacro-annotations")
+      if (priorTo2_13(scalaVersion.value)) Nil
+      else Seq("-Ymacro-annotations")
     )
   )
   .dependsOn(derivation, derivation % "test->test")
