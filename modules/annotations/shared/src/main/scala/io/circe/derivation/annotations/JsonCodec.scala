@@ -37,8 +37,8 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
        }
        """
     case List(
-        clsDef: ClassDef,
-        q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
+          clsDef: ClassDef,
+          q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
         ) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
@@ -79,10 +79,10 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       case Ident(TypeName("KebabCaseJsonCodec")) => (JsonCodecType.KebabCaseJsonCodec, kebabCaseMemberNamesCfg)
       case _ =>
         c.prefix.tree match {
-          case q"new ${`macroName` }()"              => (JsonCodecType.Both, defaultCfg)
-          case q"new ${`macroName` }(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
-          case q"new ${`macroName` }($cfg)"          => (codecFrom(c.typecheck(cfg)), cfg)
-          case _                                     => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
+          case q"new ${`macroName`}()"              => (JsonCodecType.Both, defaultCfg)
+          case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
+          case q"new ${`macroName`}($cfg)"          => (codecFrom(c.typecheck(cfg)), cfg)
+          case _                                    => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
         }
     }
   }
