@@ -198,7 +198,7 @@ lazy val examplesScrooge = project
     libraryDependencies ++= (
       if (priorTo2_13(scalaVersion.value))
         Seq(
-          "com.twitter" %% "scrooge-core" % "20.5.0",
+          "com.twitter" %% "scrooge-core" % "20.7.0",
           "org.apache.thrift" % "libthrift" % "0.10.0"
         )
       else Nil
