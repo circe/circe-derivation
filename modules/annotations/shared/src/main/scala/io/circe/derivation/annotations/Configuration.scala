@@ -13,12 +13,14 @@ import io.circe.derivation.renaming
 sealed trait Configuration {
   type Config <: Configuration
 
-  /** Transforms the names of type members in the JSON, allowing, for example,
+  /**
+   * Transforms the names of type members in the JSON, allowing, for example,
    *  formatting or case changes
    */
   def transformMemberNames: String => String
 
-  /** Transforms the value of any constructor names in the JSON, allowing,
+  /**
+   * Transforms the value of any constructor names in the JSON, allowing,
    *  for example, formatting or case changes
    */
   def transformConstructorNames: String => String
@@ -55,7 +57,8 @@ sealed trait Configuration {
 
 object Configuration {
 
-  /** Configuration allowing customisation of JSON produced when encoding or
+  /**
+   * Configuration allowing customisation of JSON produced when encoding or
    *  decoding.
    *
    *  This configuration creates *both* encoder and decoder.
@@ -81,7 +84,8 @@ object Configuration {
       Codec(transformMemberNames, transformConstructorNames, useDefaults, discriminator)
   }
 
-  /** Configuration allowing customisation of JSON produced when encoding or
+  /**
+   * Configuration allowing customisation of JSON produced when encoding or
    *  decoding.
    *
    *  This configuration **only** creates decoder.
@@ -105,7 +109,8 @@ object Configuration {
       DecodeOnly(transformMemberNames, transformConstructorNames, useDefaults, discriminator)
   }
 
-  /** Configuration allowing customisation of JSON produced when encoding or
+  /**
+   * Configuration allowing customisation of JSON produced when encoding or
    *  decoding.
    *
    *  This configuration **only** creates encoder.
