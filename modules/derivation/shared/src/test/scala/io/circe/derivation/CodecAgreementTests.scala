@@ -1,6 +1,4 @@
 package io.circe.derivation
-
-import cats.instances.either._
 import cats.kernel.Eq
 import cats.laws._
 import cats.laws.discipline._
