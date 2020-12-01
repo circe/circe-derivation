@@ -1,6 +1,6 @@
 addSbtPlugin("com.dwijnand" % "sbt-travisci" % "1.2.0")
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.13")
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.1")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.2")
 // Only needed for testing.
 addSbtPlugin("com.twitter" % "scrooge-sbt-plugin" % "20.4.1")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
