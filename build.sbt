@@ -16,7 +16,7 @@ val compilerOptions = Seq(
   "-Ywarn-numeric-widen"
 )
 
-val catsVersion = "2.3.1"
+val catsVersion = "2.4.1"
 val circeVersion = "0.13.0"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.12.0-M5"
