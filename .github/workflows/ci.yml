@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.12, 2.13.3]
+        scala: [2.12.13, 2.13.3]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
@@ -46,13 +46,13 @@ jobs:
         run: sbt ++${{ matrix.scala }} clean coverage test coverageReport
 
       - name: Setup Python
-        if: matrix.scala == '2.12.12'
+        if: matrix.scala == '2.12.13'
         uses: actions/setup-python@v2
         with:
           python-version: 3.x
 
       - name: Coverage report
-        if: matrix.scala == '2.12.12'
+        if: matrix.scala == '2.12.13'
         run: |
           pip install codecov
           codecov
