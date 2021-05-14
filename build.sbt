@@ -16,12 +16,12 @@ val compilerOptions = Seq(
   "-Ywarn-numeric-widen"
 )
 
-val catsVersion = "2.2.0"
+val catsVersion = "2.6.1"
 val circeVersion = "0.13.0"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.12.0-M5"
-val scalaCheckVersion = "1.15.1"
-val scalaJavaTimeVersion = "2.0.0"
+val scalaCheckVersion = "1.15.3"
+val scalaJavaTimeVersion = "2.2.2"
 
 def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -97,7 +97,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.2.2.0" % Test,
-      "org.typelevel" %%% "discipline-scalatest" % "2.1.0" % Test
+      "org.typelevel" %%% "discipline-scalatest" % "2.1.4" % Test
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api"
