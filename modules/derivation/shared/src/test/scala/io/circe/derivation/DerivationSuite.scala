@@ -64,6 +64,19 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder
   val codecForAdt: Codec[Adt] = deriveCodec
 
+  implicit val decodeNestedAdtFoo: Decoder[NestedAdtFoo] = deriveDecoder
+  implicit val encodeNestedAdtFoo: Encoder.AsObject[NestedAdtFoo] = deriveEncoder
+
+  implicit val decodeNestedAdtBar: Decoder[NestedAdtBar] = deriveDecoder
+  implicit val encodeNestedAdtBar: Encoder.AsObject[NestedAdtBar] = deriveEncoder
+
+  implicit val decodeNestedAdtQux: Decoder[NestedAdtQux.type] = deriveDecoder
+  implicit val encodeNestedAdtQux: Encoder.AsObject[NestedAdtQux.type] = deriveEncoder
+
+  implicit val decodeNestedAdt: Decoder[NestedAdt] = deriveDecoder
+  implicit val encodeNestedAdt: Encoder.AsObject[NestedAdt] = deriveEncoder
+  val codecForNestedAdt: Codec[NestedAdt] = deriveCodec
+
   object discriminator {
     val typeField = Some("_type")
     implicit val decodeAdtFoo: Decoder[AdtFoo] = deriveDecoder(identity, false, typeField)
@@ -78,6 +91,19 @@ object DerivationSuiteCodecs extends Serializable {
     implicit val decodeAdt: Decoder[Adt] = deriveDecoder(identity, false, typeField)
     implicit val encodeAdt: Encoder.AsObject[Adt] = deriveEncoder(identity, typeField)
     val codecForAdt: Codec[Adt] = deriveCodec(identity, false, typeField)
+
+    implicit val decodeNestedAdtFoo: Decoder[NestedAdtFoo] = deriveDecoder(identity, false, typeField)
+    implicit val encodeNestedAdtFoo: Encoder.AsObject[NestedAdtFoo] = deriveEncoder(identity, typeField)
+
+    implicit val decodeNestedAdtBar: Decoder[NestedAdtBar] = deriveDecoder(identity, false, typeField)
+    implicit val encodeNestedAdtBar: Encoder.AsObject[NestedAdtBar] = deriveEncoder(identity, typeField)
+
+    implicit val decodeNestedAdtQux: Decoder[NestedAdtQux.type] = deriveDecoder(identity, false, typeField)
+    implicit val encodeNestedAdtQux: Encoder.AsObject[NestedAdtQux.type] = deriveEncoder(identity, typeField)
+
+    implicit val decodeNestedAdt: Decoder[NestedAdt] = deriveDecoder(identity, false, typeField)
+    implicit val encodeNestedAdt: Encoder.AsObject[NestedAdt] = deriveEncoder(identity, typeField)
+    val codecForNestedAdt: Codec[NestedAdt] = deriveCodec(identity, false, typeField)
   }
 }
 
@@ -101,6 +127,15 @@ class DerivationSuite extends CirceSuite {
     assert(discriminator.decodeAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
+  it should "fail to decode nested ADTs with an invalid object wrapper" in {
+    assert(decodeNestedAdt.decodeJson(Json.obj("nestedAdtt" -> NestedAdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode nested ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = NestedAdtFoo(1).asJsonObject.add("_type", "nestedAdtt".asJson)
+    assert(discriminator.decodeNestedAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
+  }
+
   "deriveCodec" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
     case class EmptyCaseClass()
 
@@ -116,6 +151,15 @@ class DerivationSuite extends CirceSuite {
   it should "fail to decode ADTs with an invalid discriminator" in {
     val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
     assert(discriminator.codecForAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
+  }
+
+  it should "fail to decode nested ADTs with an invalid object wrapper" in {
+    assert(codecForNestedAdt.decodeJson(Json.obj("nestedAdtt" -> NestedAdtFoo(1).asJson)).isLeft)
+  }
+
+  it should "fail to decode nested ADTs with an invalid discriminator" in {
+    val withBadDiscriminator = NestedAdtFoo(1).asJsonObject.add("_type", "nestedAdtt".asJson)
+    assert(discriminator.codecForNestedAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
   checkAll("Codec[Foo]", CodecTests[Foo].codec)
@@ -227,6 +271,16 @@ class DerivationSuite extends CirceSuite {
   )
 
   checkAll(
+    "CodecAgreement[NestedAdt]",
+    CodecAgreementTests[NestedAdt](
+      GenericAutoCodecs.decodeNestedAdt,
+      GenericAutoCodecs.encodeNestedAdt,
+      decodeNestedAdt,
+      encodeNestedAdt
+    ).codecAgreement
+  )
+
+  checkAll(
     "CodecAgreementWithCodec[Foo]",
     CodecAgreementTests[Foo](
       codecForFoo,
@@ -326,6 +380,16 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
+  checkAll(
+    "CodecAgreementWithCodec[NestedAdt]",
+    CodecAgreementTests[NestedAdt](
+      discriminator.codecForNestedAdt,
+      discriminator.codecForNestedAdt,
+      discriminator.decodeNestedAdt,
+      discriminator.encodeNestedAdt
+    ).codecAgreement
+  )
+
   "useDefaults" should "cause defaults to be used for missing fields" in {
     val expectedBothDefaults = WithDefaults(0, 1, List(""))
     val expectedOneDefault = WithDefaults(0, 1, Nil)
@@ -365,5 +429,23 @@ class DerivationSuite extends CirceSuite {
       List(CursorOp.DownField("s"), CursorOp.DownField("AdtFoo"))
     )
     assert(codecForAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
+  }
+
+  "Derived nested ADT decoders" should "preserve error accumulation" in {
+    val j = Json.obj("NestedAdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
+    val histories = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("i"), CursorOp.DownField("NestedAdtFoo")),
+      List(CursorOp.DownField("s"), CursorOp.DownField("NestedAdtFoo"))
+    )
+    assert(decodeNestedAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
+  }
+
+  "Derived nested ADT codecs" should "preserve error accumulation" in {
+    val j = Json.obj("NestedAdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
+    val histories = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("i"), CursorOp.DownField("NestedAdtFoo")),
+      List(CursorOp.DownField("s"), CursorOp.DownField("NestedAdtFoo"))
+    )
+    assert(codecForNestedAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 }

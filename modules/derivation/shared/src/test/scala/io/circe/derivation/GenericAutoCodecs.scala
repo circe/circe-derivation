@@ -15,6 +15,8 @@ object GenericAutoCodecs {
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] = genericDeriveEncoder
   implicit val decodeAdt: Decoder[Adt] = genericDeriveDecoder
   implicit val encodeAdt: Encoder.AsObject[Adt] = genericDeriveEncoder
+  implicit val decodeNestedAdt: Decoder[NestedAdt] = genericDeriveDecoder
+  implicit val encodeNestedAdt: Encoder.AsObject[NestedAdt] = genericDeriveEncoder
 
   implicit val decodeSimpleClass: Decoder[SimpleClass] = genericDeriveDecoder
   implicit val encodeSimpleClass: Encoder[SimpleClass] = genericDeriveEncoder
