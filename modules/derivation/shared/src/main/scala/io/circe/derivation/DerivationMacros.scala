@@ -3,6 +3,7 @@ package io.circe.derivation
 import io.circe.{ Codec, Decoder, Encoder }
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.blackbox
+import scala.util.control.TailCalls._
 
 class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   import c.universe._
@@ -231,6 +232,22 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       ].a
     """
 
+  private[this] def allSubclasses(klass: ClassSymbol): Set[Symbol] = {
+    def go(syms: List[Symbol]): TailRec[Set[Symbol]] = syms match {
+      // Symbol is another sealed trait, recurse on its subclasses
+      case sym :: rest if sym.isClass && sym.asClass.isSealed =>
+        tailcall(go(rest ++ sym.asClass.knownDirectSubclasses))
+
+      // Everything else is a subclass
+      case sym :: rest =>
+        tailcall(go(rest)).map(_ + sym)
+
+      case Nil => done(Set())
+    }
+
+    go(klass.knownDirectSubclasses.toList).result
+  }
+
   def materializeDecoder[T: c.WeakTypeTag]: c.Expr[Decoder[T]] =
     materializeDecoderImpl[T](None, trueExpression, defaultDiscriminator)
 
@@ -298,7 +315,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
+    val subclasses = allSubclasses(tpe.typeSymbol.asClass)
     if (subclasses.isEmpty) {
       materializeCodecCaseClassImpl[T](
         transformNames,
@@ -322,7 +339,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
+    val subclasses = allSubclasses(tpe.typeSymbol.asClass)
     if (subclasses.isEmpty) {
       materializeDecoderCaseClassImpl[T](transformNames, useDefaults)
     } else {
@@ -676,7 +693,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
     // we manage to work on ADT lets check the subclasses
-    val subclasses = tpe.typeSymbol.asClass.knownDirectSubclasses
+    val subclasses = allSubclasses(tpe.typeSymbol.asClass)
     if (subclasses.isEmpty) {
       materializeEncoderCaseClassImpl[T](transformNames)
     } else {
