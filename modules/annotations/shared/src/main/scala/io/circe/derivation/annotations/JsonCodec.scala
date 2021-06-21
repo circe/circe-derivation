@@ -132,11 +132,10 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     } else {
       val tparamNames = tparams.map(_.name)
       def mkImplicitParams(prefix: String, typeSymbol: TypeSymbol) =
-        tparamNames.zipWithIndex.map {
-          case (tparamName, i) =>
-            val paramName = TermName(s"$prefix$i")
-            val paramType = tq"$typeSymbol[$tparamName]"
-            q"$paramName: $paramType"
+        tparamNames.zipWithIndex.map { case (tparamName, i) =>
+          val paramName = TermName(s"$prefix$i")
+          val paramType = tq"$typeSymbol[$tparamName]"
+          q"$paramName: $paramType"
         }
       val decodeParams = mkImplicitParams("decode", DecoderClass)
       val encodeParams = mkImplicitParams("encode", EncoderClass)
