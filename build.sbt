@@ -2,7 +2,18 @@ import sbtcrossproject.{ CrossType, crossProject }
 import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 
-organization in ThisBuild := "io.circe"
+ThisBuild / organization := "io.circe"
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
+ThisBuild / githubWorkflowPublishTargetBranches := Nil
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Use(
+    UseRef.Public(
+      "codecov",
+      "codecov-action",
+      "v1"
+    )
+  )
+)
 
 val compilerOptions = Seq(
   "-deprecation",
@@ -43,14 +54,14 @@ val baseSettings = Seq(
         "-Ywarn-unused:imports"
       )
   ),
-  scalacOptions in (Compile, console) ~= {
+  Compile / console / scalacOptions ~= {
     _.filterNot(Set("-Ywarn-unused-import"))
   },
-  scalacOptions in (Test, console) ~= {
+  Test / console / scalacOptions ~= {
     _.filterNot(Set("-Ywarn-unused-import"))
   },
   coverageHighlighting := true,
-  (scalastyleSources in Compile) ++= (unmanagedSourceDirectories in Compile).value
+  (Compile / scalastyleSources) ++= (Compile / unmanagedSourceDirectories).value
 )
 
 val allSettings = baseSettings ++ publishSettings
@@ -112,7 +123,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       else Nil
     ),
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
-    addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
+    addMappingsToSiteDir(Compile / packageDoc / mappings, docMappingsApiDir)
   )
   .jsSettings(
     coverageEnabled := false,
@@ -154,7 +165,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
   .dependsOn(derivation, derivation % "test->test")
   .jvmSettings(
     mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion),
-    addMappingsToSiteDir(mappings in (Compile, packageDoc), docMappingsApiDir)
+    addMappingsToSiteDir(Compile / packageDoc / mappings, docMappingsApiDir)
   )
   .jsSettings(
     coverageEnabled := false,
@@ -203,7 +214,7 @@ lazy val examplesScrooge = project
         )
       else Nil
     ),
-    scroogeThriftSourceFolder in Compile := (
+    Compile / scroogeThriftSourceFolder := (
       if (priorTo2_13(scalaVersion.value))
         (
           baseDirectory.value / "src" / "main" / "thrift"
@@ -276,7 +287,7 @@ lazy val publishSettings = Seq(
   homepage := Some(url("https://github.com/circe/circe-derivation")),
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { _ => false },
   publishTo := {
     val nexus = "https://oss.sonatype.org/"

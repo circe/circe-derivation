@@ -104,8 +104,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     def instantiate: Tree = instantiate(paramListsWithNames.map(_.map(p => q"${p._2}")))
     def instantiateAccumulating: Tree = instantiate(
       paramListsWithNames.map(
-        _.map {
-          case (Member(_, _, tpe, _, _, _), name) => extractFromValid(name, tpe)
+        _.map { case (Member(_, _, tpe, _, _, _), name) =>
+          extractFromValid(name, tpe)
         }
       )
     )
@@ -115,13 +115,12 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val paramListsWithNames: List[List[(Member, TermName)]] =
       paramLists
-        .foldLeft((List.empty[List[(Member, TermName)]], 1)) {
-          case ((acc, i), paramList) =>
-            val nextParamList = paramList.zipWithIndex.map {
-              case (member, j) => (member, TermName(s"res${i + j}"))
-            }
+        .foldLeft((List.empty[List[(Member, TermName)]], 1)) { case ((acc, i), paramList) =>
+          val nextParamList = paramList.zipWithIndex.map { case (member, j) =>
+            (member, TermName(s"res${i + j}"))
+          }
 
-            (nextParamList :: acc, i + nextParamList.size)
+          (nextParamList :: acc, i + nextParamList.size)
         }
         ._1
         .reverse
@@ -170,8 +169,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       case NoSymbol => None
       case s =>
         val defaults = caseClassFieldsDefaults(tpe)
-        s.alternatives.collect {
-          case m: MethodSymbol => m.paramLists
+        s.alternatives.collect { case m: MethodSymbol =>
+          m.paramLists
         }.sortBy(-_.map(_.size).sum).headOption.map { applyParams =>
           //We use zipwithIndex for gathering default field value if available
           ProductReprWithApply(
@@ -372,9 +371,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val discriminatorCases: List[Tree] = subclassList
       .zip(transformedNameNames)
-      .map {
-        case (s, value) =>
-          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      .map { case (s, value) =>
+        cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
       }
       .toList
 
@@ -447,8 +445,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         )
       } else {
 
-        val instanceDefs: List[Tree] = repr.instances.map(_.decoder).map {
-          case instance @ Instance(_, instanceType, name) =>
+        val instanceDefs: List[Tree] =
+          repr.instances.map(_.decoder).map { case instance @ Instance(_, instanceType, name) =>
             val resolved = instance.resolve()
 
             if (checkDecoderValSafety(resolved)) {
@@ -456,7 +454,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             } else {
               q"private[this] def $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
             }
-        }
+          }
 
         val reversed = repr.paramListsWithNames.flatten.reverse
 
@@ -497,15 +495,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         }
 
         val (results: List[Tree], resultNames: List[TermName]) =
-          reversed.reverse.map {
-            case (member, resultName) =>
-              (
-                q"""
+          reversed.reverse.map { case (member, resultName) =>
+            (
+              q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
                 ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
             """,
-                resultName
-              )
+              resultName
+            )
           }.unzip
 
         val resultErrors: List[Tree] = resultNames.map(resultName => q"errors($resultName)")
@@ -563,8 +560,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
-      val instanceDefs: List[Tree] = repr.instances.map(_.encoder).map {
-        case instance @ Instance(_, instanceType, name) =>
+      val instanceDefs: List[Tree] =
+        repr.instances.map(_.encoder).map { case instance @ Instance(_, instanceType, name) =>
           val resolved = instance.resolve()
 
           if (checkEncoderValSafety(resolved)) {
@@ -572,7 +569,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           } else {
             q"private[this] def $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
           }
-      }
+        }
 
       // we check if we want to serialize no defaults
       val hasNoDefault = repr.paramLists.flatten.exists(_.noDefaultValue)
@@ -621,18 +618,17 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       } else {
         // we manage without default serialization - common case
 
-        val fields: List[Tree] = repr.paramLists.flatten.map {
-          case Member(name, decodedName, tpe, keyName, _, _) =>
-            repr.encoder(tpe) match {
-              case Instance(_, _, instanceName) =>
-                val realName = keyName.getOrElse(transformName(decodedName))
-                q"""
+        val fields: List[Tree] = repr.paramLists.flatten.map { case Member(name, decodedName, tpe, keyName, _, _) =>
+          repr.encoder(tpe) match {
+            case Instance(_, _, instanceName) =>
+              val realName = keyName.getOrElse(transformName(decodedName))
+              q"""
               _root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
                 ${transformName(decodedName)},
                 this.$instanceName.apply(a.$name)
               )
             """
-            }
+          }
         }
 
         c.Expr[Encoder.AsObject[T]](
@@ -718,17 +714,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           case None => ListMap()
           case Some(syntatic) =>
             ListMap(
-              syntatic.asMethod.paramLists.flatten.zipWithIndex.map {
-                case (field, i) =>
-                  (
-                    field.name.toTermName.decodedName.toString, {
-                      val method = TermName(s"apply$$default$$${i + 1}")
-                      tpe.typeSymbol.companion.typeSignature.member(method) match {
-                        case NoSymbol => None
-                        case _        => Some(q"${tpe.typeSymbol.companion}.$method")
-                      }
+              syntatic.asMethod.paramLists.flatten.zipWithIndex.map { case (field, i) =>
+                (
+                  field.name.toTermName.decodedName.toString, {
+                    val method = TermName(s"apply$$default$$${i + 1}")
+                    tpe.typeSymbol.companion.typeSignature.member(method) match {
+                      case NoSymbol => None
+                      case _        => Some(q"${tpe.typeSymbol.companion}.$method")
                     }
-                  )
+                  }
+                )
               }: _*
             )
         }
@@ -761,9 +756,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val discriminatorCases: List[Tree] = subclassList
       .zip(transformedNameNames)
-      .map {
-        case (s, value) =>
-          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
+      .map { case (s, value) =>
+        cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
       }
       .toList
 
@@ -913,8 +907,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         )
       } else {
 
-        val encoderInstanceDefs: List[Tree] = repr.instances.map(_.encoder).map {
-          case instance @ Instance(_, instanceType, name) =>
+        val encoderInstanceDefs: List[Tree] =
+          repr.instances.map(_.encoder).map { case instance @ Instance(_, instanceType, name) =>
             val resolved = instance.resolve()
 
             if (checkEncoderValSafety(resolved)) {
@@ -922,7 +916,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             } else {
               q"private[this] def $name: _root_.io.circe.Encoder[$instanceType] = $resolved"
             }
-        }
+          }
 
         // we manage default serialization
         val fields: List[Tree] = repr.paramLists.flatten.map {
@@ -954,8 +948,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             }
         }
 
-        val decoderInstanceDefs: List[Tree] = repr.instances.map(_.decoder).map {
-          case instance @ Instance(_, instanceType, name) =>
+        val decoderInstanceDefs: List[Tree] =
+          repr.instances.map(_.decoder).map { case instance @ Instance(_, instanceType, name) =>
             val resolved = instance.resolve()
 
             if (checkDecoderValSafety(resolved)) {
@@ -963,7 +957,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             } else {
               q"private[this] def $name: _root_.io.circe.Decoder[$instanceType] = $resolved"
             }
-        }
+          }
 
         val reversed = repr.paramListsWithNames.flatten.reverse
 
@@ -1004,15 +998,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         }
 
         val (results: List[Tree], resultNames: List[TermName]) =
-          reversed.reverse.map {
-            case (member, resultName) =>
-              (
-                q"""
+          reversed.reverse.map { case (member, resultName) =>
+            (
+              q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
                 ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
             """,
-                resultName
-              )
+              resultName
+            )
           }.unzip
 
         val resultErrors: List[Tree] = resultNames.map(resultName => q"errors($resultName)")
