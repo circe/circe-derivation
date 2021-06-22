@@ -3,8 +3,6 @@ package io.circe.derivation.annotations
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object JsonCodecADTSpecSamples {
 
@@ -39,80 +37,75 @@ object JsonCodecADTSpecSamples {
   @JsonCodec case class ADTSnakeDiscriminatorB(b: Int) extends ADTSnakeDiscriminator
 }
 
-class JsonCodecADTSpec extends AnyWordSpec with Matchers {
+class JsonCodecADTSpec extends munit.FunSuite {
 
   import JsonCodecADTSpecSamples._
 
   implicit val printer = Printer.noSpaces.copy(dropNullValues = true)
 
-  "JsonCodecADTSpec" should {
+  test("JsonCodecADTSpec should serialize default") {
+    val a1: ADT1 = ADT1A(1)
 
-    "serialize default" in {
-      val a1: ADT1 = ADT1A(1)
+    assertEquals(a1.asJson.printWith(printer), """{"ADT1A":{"a":1}}""")
+    assertEquals(parse("""{"ADT1A":{"a":1}}""").flatMap(_.as[ADT1]), Right(a1))
 
-      a1.asJson.printWith(printer) should be("""{"ADT1A":{"a":1}}""")
-      parse("""{"ADT1A":{"a":1}}""").flatMap(_.as[ADT1]) should be(
-        Right(a1)
-      )
+    val b1: ADT1 = ADT1B(1)
 
-      val b1: ADT1 = ADT1B(1)
+    assertEquals(b1.asJson.printWith(printer), """{"ADT1B":{"b":1}}""")
+    assertEquals(parse("""{"ADT1B":{"b":1}}""").flatMap(_.as[ADT1]), Right(b1))
+  }
 
-      b1.asJson.printWith(printer) should be("""{"ADT1B":{"b":1}}""")
-      parse("""{"ADT1B":{"b":1}}""").flatMap(_.as[ADT1]) should be(
-        Right(b1)
-      )
-    }
+  test("serialize discriminator custom fieldname") {
+    val a1: ADT1Custom = ADT1CustomA(1)
 
-    "serialize discriminator custom fieldname" in {
-      val a1: ADT1Custom = ADT1CustomA(1)
+    assertEquals(a1.asJson.printWith(printer), """{"a":1,"_type":"ADT1CustomA"}""")
+    assertEquals(parse("""{"a":1,"_type":"ADT1CustomA"}""").flatMap(_.as[ADT1Custom]), Right(a1))
 
-      a1.asJson.printWith(printer) should be("""{"a":1,"_type":"ADT1CustomA"}""")
-      parse("""{"a":1,"_type":"ADT1CustomA"}""").flatMap(_.as[ADT1Custom]) should be(Right(a1))
+    val b1: ADT1Custom = ADT1CustomB(1)
 
-      val b1: ADT1Custom = ADT1CustomB(1)
+    assertEquals(b1.asJson.printWith(printer), """{"b":1,"_type":"ADT1CustomB"}""")
+    assertEquals(parse("""{"b":1,"_type":"ADT1CustomB"}""").flatMap(_.as[ADT1Custom]), Right(b1))
+  }
 
-      b1.asJson.printWith(printer) should be("""{"b":1,"_type":"ADT1CustomB"}""")
-      parse("""{"b":1,"_type":"ADT1CustomB"}""").flatMap(_.as[ADT1Custom]) should be(Right(b1))
-    }
+  test("serialize discriminator typed") {
+    val a1: ADTTyped = ADTTypedA(1)
 
-    "serialize discriminator typed" in {
-      val a1: ADTTyped = ADTTypedA(1)
+    assertEquals(a1.asJson.printWith(printer), """{"ADTTypedA":{"a":1}}""")
+    assertEquals(parse("""{"ADTTypedA":{"a":1}}""").flatMap(_.as[ADTTyped]), Right(a1))
 
-      a1.asJson.printWith(printer) should be("""{"ADTTypedA":{"a":1}}""")
-      parse("""{"ADTTypedA":{"a":1}}""").flatMap(_.as[ADTTyped]) should be(
-        Right(a1)
-      )
+    val b1: ADTTyped = ADTTypedB(1)
 
-      val b1: ADTTyped = ADTTypedB(1)
+    assertEquals(b1.asJson.printWith(printer), """{"ADTTypedB":{"b":1}}""")
+    assertEquals(parse("""{"ADTTypedB":{"b":1}}""").flatMap(_.as[ADTTyped]), Right(b1))
+  }
 
-      b1.asJson.printWith(printer) should be("""{"ADTTypedB":{"b":1}}""")
-      parse("""{"ADTTypedB":{"b":1}}""").flatMap(_.as[ADTTyped]) should be(
-        Right(b1)
-      )
-    }
+  test("transform constructor names") {
+    val a1: ADTTransformed = ADTTransformed1(1)
 
-    "transform constructor names" in {
-      val a1: ADTTransformed = ADTTransformed1(1)
+    assertEquals(a1.asJson.printWith(printer), """{"adt-transformed1":{"a":1}}""")
+    assertEquals(parse("""{"adt-transformed1":{"a":1}}""").right.get.as[ADTTransformed], Right(a1))
 
-      a1.asJson.printWith(printer) should be("""{"adt-transformed1":{"a":1}}""")
-      parse("""{"adt-transformed1":{"a":1}}""").right.get.as[ADTTransformed] should be(Right(a1))
+    val b1: ADTTransformed = ADTTransformed2(1)
 
-      val b1: ADTTransformed = ADTTransformed2(1)
+    assertEquals(b1.asJson.printWith(printer), """{"adt-transformed2":{"b":1}}""")
+    assertEquals(parse("""{"adt-transformed2":{"b":1}}""").right.get.as[ADTTransformed], Right(b1))
+  }
 
-      b1.asJson.printWith(printer) should be("""{"adt-transformed2":{"b":1}}""")
-      parse("""{"adt-transformed2":{"b":1}}""").right.get.as[ADTTransformed] should be(Right(b1))
-    }
+  test("transform constructor names with a discriminator") {
+    val a1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorA(1)
 
-    "transform constructor names with a discriminator" in {
-      val a1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorA(1)
+    assertEquals(a1.asJson.printWith(printer), """{"a":1,"_type":"adt_snake_discriminator_a"}""")
+    assertEquals(
+      parse("""{"a":1,"_type":"adt_snake_discriminator_a"}""").right.get.as[ADTSnakeDiscriminator],
+      Right(a1)
+    )
 
-      a1.asJson.printWith(printer) should be("""{"a":1,"_type":"adt_snake_discriminator_a"}""")
-      parse("""{"a":1,"_type":"adt_snake_discriminator_a"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(a1))
+    val b1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorB(1)
 
-      val b1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorB(1)
-
-      b1.asJson.printWith(printer) should be("""{"b":1,"_type":"adt_snake_discriminator_b"}""")
-      parse("""{"b":1,"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(b1))
-    }
+    assertEquals(b1.asJson.printWith(printer), """{"b":1,"_type":"adt_snake_discriminator_b"}""")
+    assertEquals(
+      parse("""{"b":1,"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator],
+      Right(b1)
+    )
   }
 }

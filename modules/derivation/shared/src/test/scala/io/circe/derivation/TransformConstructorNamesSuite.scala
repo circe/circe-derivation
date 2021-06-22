@@ -4,6 +4,8 @@ import io.circe.{ Codec, Decoder, Encoder, Json }
 import io.circe.examples.{ Adt, AdtBar, AdtFoo, AdtQux, NestedAdt, NestedAdtBar, NestedAdtFoo, NestedAdtQux }
 import io.circe.syntax._
 import io.circe.testing.CodecTests
+import munit.DisciplineSuite
+import org.scalacheck.Prop
 
 object TransformConstructorNamesSuite extends Serializable {
 
@@ -46,7 +48,7 @@ object TransformConstructorNamesSuite extends Serializable {
   }
 }
 
-class TransformConstructorNamesSuite extends CirceSuite {
+class TransformConstructorNamesSuite extends CirceSuite with DisciplineSuite {
   import TransformConstructorNamesSuite._
 
   checkAll("Codec[Adt]", CodecTests[Adt].codec)
@@ -93,43 +95,51 @@ class TransformConstructorNamesSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  "deriveEncoder" should "properly transform constructor names" in forAll { adt: Adt =>
-    val expected = adt match {
-      case AdtFoo(i, s) => Json.obj("adt_foo" -> Json.obj("i" -> i.asJson, "s" -> s.asJson))
-      case AdtBar(xs)   => Json.obj("adt_bar" -> Json.obj("xs" -> xs.asJson))
-      case AdtQux       => Json.obj("adt_qux" -> Json.obj())
-    }
+  test("deriveEncoder should properly transform constructor names") {
+    Prop.forAll { adt: Adt =>
+      val expected = adt match {
+        case AdtFoo(i, s) => Json.obj("adt_foo" -> Json.obj("i" -> i.asJson, "s" -> s.asJson))
+        case AdtBar(xs)   => Json.obj("adt_bar" -> Json.obj("xs" -> xs.asJson))
+        case AdtQux       => Json.obj("adt_qux" -> Json.obj())
+      }
 
-    assert(adt.asJson === expected)
+      assert(adt.asJson === expected)
+    }
   }
 
-  "deriveEncoder" should "properly transform nested constructor names" in forAll { adt: NestedAdt =>
-    val expected = adt match {
-      case NestedAdtFoo(i, s) => Json.obj("nested_adt_foo" -> Json.obj("i" -> i.asJson, "s" -> s.asJson))
-      case NestedAdtBar(xs)   => Json.obj("nested_adt_bar" -> Json.obj("xs" -> xs.asJson))
-      case NestedAdtQux       => Json.obj("nested_adt_qux" -> Json.obj())
-    }
+  test("deriveEncoder should properly transform nested constructor names") {
+    Prop.forAll { adt: NestedAdt =>
+      val expected = adt match {
+        case NestedAdtFoo(i, s) => Json.obj("nested_adt_foo" -> Json.obj("i" -> i.asJson, "s" -> s.asJson))
+        case NestedAdtBar(xs)   => Json.obj("nested_adt_bar" -> Json.obj("xs" -> xs.asJson))
+        case NestedAdtQux       => Json.obj("nested_adt_qux" -> Json.obj())
+      }
 
-    assert(adt.asJson === expected)
+      assert(adt.asJson === expected)
+    }
   }
 
-  it should "properly transform constructor names when using a discriminator" in forAll { adt: Adt =>
-    val expected = adt match {
-      case AdtFoo(i, s) => Json.obj("i" -> i.asJson, "s" -> s.asJson, "_type" -> "adt_foo".asJson)
-      case AdtBar(xs)   => Json.obj("xs" -> xs.asJson, "_type" -> "adt_bar".asJson)
-      case AdtQux       => Json.obj("_type" -> "adt_qux".asJson)
-    }
+  test("properly transform constructor names when using a discriminator") {
+    Prop.forAll { adt: Adt =>
+      val expected = adt match {
+        case AdtFoo(i, s) => Json.obj("i" -> i.asJson, "s" -> s.asJson, "_type" -> "adt_foo".asJson)
+        case AdtBar(xs)   => Json.obj("xs" -> xs.asJson, "_type" -> "adt_bar".asJson)
+        case AdtQux       => Json.obj("_type" -> "adt_qux".asJson)
+      }
 
-    assert(adt.asJson(discriminator.encodeAdt) === expected)
+      assert(adt.asJson(discriminator.encodeAdt) === expected)
+    }
   }
 
-  it should "properly transform nested constructor names when using a discriminator" in forAll { adt: NestedAdt =>
-    val expected = adt match {
-      case NestedAdtFoo(i, s) => Json.obj("i" -> i.asJson, "s" -> s.asJson, "_type" -> "nested_adt_foo".asJson)
-      case NestedAdtBar(xs)   => Json.obj("xs" -> xs.asJson, "_type" -> "nested_adt_bar".asJson)
-      case NestedAdtQux       => Json.obj("_type" -> "nested_adt_qux".asJson)
-    }
+  test("properly transform nested constructor names when using a discriminator") {
+    Prop.forAll { adt: NestedAdt =>
+      val expected = adt match {
+        case NestedAdtFoo(i, s) => Json.obj("i" -> i.asJson, "s" -> s.asJson, "_type" -> "nested_adt_foo".asJson)
+        case NestedAdtBar(xs)   => Json.obj("xs" -> xs.asJson, "_type" -> "nested_adt_bar".asJson)
+        case NestedAdtQux       => Json.obj("_type" -> "nested_adt_qux".asJson)
+      }
 
-    assert(adt.asJson(discriminator.encodeNestedAdt) === expected)
+      assert(adt.asJson(discriminator.encodeNestedAdt) === expected)
+    }
   }
 }

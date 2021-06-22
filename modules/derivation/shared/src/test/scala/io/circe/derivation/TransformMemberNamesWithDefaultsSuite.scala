@@ -6,6 +6,7 @@ import io.circe.examples.{ Bar, Baz, Foo, Qux }
 import io.circe.syntax._
 import io.circe.examples._
 import io.circe.testing.CodecTests
+import munit.DisciplineSuite
 
 object TransformMemberNamesWithDefaultsSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase)
@@ -34,7 +35,7 @@ object TransformMemberNamesWithDefaultsSuiteCodecs extends Serializable {
 
 }
 
-class TransformMemberNamesWithDefaultsSuite extends CirceSuite {
+class TransformMemberNamesWithDefaultsSuite extends CirceSuite with DisciplineSuite {
   import TransformMemberNamesExample._
   import TransformMemberNamesWithDefaultsSuiteCodecs._
 
@@ -90,7 +91,7 @@ class TransformMemberNamesWithDefaultsSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  "deriveEncoder" should "respect default behaviour" in {
+  test("deriveEncoder should respect default behaviour") {
     val expectedBothDefaults = WithDefaults(0, 1, List(""))
     val expectedOneDefault = WithDefaults(0, 1, Nil)
 

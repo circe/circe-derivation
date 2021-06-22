@@ -33,6 +33,8 @@ val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.13.0-M5"
 val scalaCheckVersion = "1.15.4"
 val scalaJavaTimeVersion = "2.3.0"
+val munitVersion = "0.7.19"
+val disciplineMunitVersion = "1.0.3"
 
 def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -61,6 +63,7 @@ val baseSettings = Seq(
     _.filterNot(Set("-Ywarn-unused-import"))
   },
   coverageHighlighting := true,
+  testFrameworks += new TestFramework("munit.Framework"),
   (Compile / scalastyleSources) ++= (Compile / unmanagedSourceDirectories).value
 )
 
@@ -107,8 +110,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-generic" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
-      "org.scalatestplus" %%% "scalacheck-1-14" % "3.2.2.0" % Test,
-      "org.typelevel" %%% "discipline-scalatest" % "2.1.5" % Test
+      "org.typelevel" %% "discipline-munit" % disciplineMunitVersion
     ),
     ghpagesNoJekyll := true,
     docMappingsApiDir := "api"

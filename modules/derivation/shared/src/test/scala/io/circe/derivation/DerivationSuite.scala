@@ -5,6 +5,8 @@ import io.circe.{ Codec, CursorOp, Decoder, Encoder, Json }
 import io.circe.examples._
 import io.circe.syntax._
 import io.circe.testing.CodecTests
+import org.scalacheck.Prop
+import munit.DisciplineSuite
 
 object DerivationSuiteCodecs extends Serializable {
   private[this] val scala, Any, String, Unit, Nil = ()
@@ -107,57 +109,61 @@ object DerivationSuiteCodecs extends Serializable {
   }
 }
 
-class DerivationSuite extends CirceSuite {
+class DerivationSuite extends CirceSuite with DisciplineSuite {
   import DerivationSuiteCodecs._
 
-  "deriveDecoder" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
-    case class EmptyCaseClass()
+  test("deriveDecoder should only accept JSON objects for zero-member case classes") {
+    Prop.forAll { (json: Json) =>
+      case class EmptyCaseClass()
 
-    val decodeEmptyCaseClass: Decoder[EmptyCaseClass] = deriveDecoder
+      val decodeEmptyCaseClass: Decoder[EmptyCaseClass] = deriveDecoder
 
-    assert(decodeEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+      assert(decodeEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+    }
   }
 
-  it should "fail to decode ADTs with an invalid object wrapper" in {
+  test("fail to decode ADTs with an invalid object wrapper") {
     assert(decodeAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
   }
 
-  it should "fail to decode ADTs with an invalid discriminator" in {
+  test("fail to decode ADTs with an invalid discriminator") {
     val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
     assert(discriminator.decodeAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
-  it should "fail to decode nested ADTs with an invalid object wrapper" in {
+  test("fail to decode nested ADTs with an invalid object wrapper") {
     assert(decodeNestedAdt.decodeJson(Json.obj("nestedAdtt" -> NestedAdtFoo(1).asJson)).isLeft)
   }
 
-  it should "fail to decode nested ADTs with an invalid discriminator" in {
+  test("fail to decode nested ADTs with an invalid discriminator") {
     val withBadDiscriminator = NestedAdtFoo(1).asJsonObject.add("_type", "nestedAdtt".asJson)
     assert(discriminator.decodeNestedAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
-  "deriveCodec" should "only accept JSON objects for zero-member case classes" in forAll { (json: Json) =>
-    case class EmptyCaseClass()
+  test("deriveCodec should only accept JSON objects for zero-member case classes") {
+    Prop.forAll { (json: Json) =>
+      case class EmptyCaseClass()
 
-    val codecForEmptyCaseClass: Codec[EmptyCaseClass] = deriveCodec
+      val codecForEmptyCaseClass: Codec[EmptyCaseClass] = deriveCodec
 
-    assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+      assert(codecForEmptyCaseClass.decodeJson(json).isRight === json.isObject)
+    }
   }
 
-  it should "fail to decode ADTs with an invalid object wrapper" in {
+  test("fail to decode ADTs with an invalid object wrapper") {
     assert(codecForAdt.decodeJson(Json.obj("adtt" -> AdtFoo(1).asJson)).isLeft)
   }
 
-  it should "fail to decode ADTs with an invalid discriminator" in {
+  test("fail to decode ADTs with an invalid discriminator") {
     val withBadDiscriminator = AdtFoo(1).asJsonObject.add("_type", "adtt".asJson)
     assert(discriminator.codecForAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
 
-  it should "fail to decode nested ADTs with an invalid object wrapper" in {
+  test("fail to decode nested ADTs with an invalid object wrapper") {
     assert(codecForNestedAdt.decodeJson(Json.obj("nestedAdtt" -> NestedAdtFoo(1).asJson)).isLeft)
   }
 
-  it should "fail to decode nested ADTs with an invalid discriminator" in {
+  test("fail to decode nested ADTs with an invalid discriminator") {
     val withBadDiscriminator = NestedAdtFoo(1).asJsonObject.add("_type", "nestedAdtt".asJson)
     assert(discriminator.codecForNestedAdt.decodeJson(withBadDiscriminator.asJson).isLeft)
   }
@@ -390,7 +396,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  "useDefaults" should "cause defaults to be used for missing fields" in {
+  test("useDefaults should cause defaults to be used for missing fields") {
     val expectedBothDefaults = WithDefaults(0, 1, List(""))
     val expectedOneDefault = WithDefaults(0, 1, Nil)
 
@@ -413,7 +419,7 @@ class DerivationSuite extends CirceSuite {
     assert(codecForWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
   }
 
-  "Derived ADT decoders" should "preserve error accumulation" in {
+  test("Derived ADT decoders should preserve error accumulation") {
     val j = Json.obj("AdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
     val histories = NonEmptyList.of[List[CursorOp]](
       List(CursorOp.DownField("i"), CursorOp.DownField("AdtFoo")),
@@ -422,7 +428,7 @@ class DerivationSuite extends CirceSuite {
     assert(decodeAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 
-  "Derived ADT codecs" should "preserve error accumulation" in {
+  test("Derived ADT codecs should preserve error accumulation") {
     val j = Json.obj("AdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
     val histories = NonEmptyList.of[List[CursorOp]](
       List(CursorOp.DownField("i"), CursorOp.DownField("AdtFoo")),
@@ -431,7 +437,7 @@ class DerivationSuite extends CirceSuite {
     assert(codecForAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 
-  "Derived nested ADT decoders" should "preserve error accumulation" in {
+  test("Derived nested ADT decoders should preserve error accumulation") {
     val j = Json.obj("NestedAdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
     val histories = NonEmptyList.of[List[CursorOp]](
       List(CursorOp.DownField("i"), CursorOp.DownField("NestedAdtFoo")),
@@ -440,7 +446,7 @@ class DerivationSuite extends CirceSuite {
     assert(decodeNestedAdt.decodeAccumulating(j).leftMap(_.map(_.history)) === Validated.invalid(histories))
   }
 
-  "Derived nested ADT codecs" should "preserve error accumulation" in {
+  test("Derived nested ADT codecs should preserve error accumulation") {
     val j = Json.obj("NestedAdtFoo" := Json.obj("s" := Json.fromInt(0))).hcursor
     val histories = NonEmptyList.of[List[CursorOp]](
       List(CursorOp.DownField("i"), CursorOp.DownField("NestedAdtFoo")),

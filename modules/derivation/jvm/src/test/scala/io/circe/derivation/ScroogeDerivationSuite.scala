@@ -3,6 +3,7 @@ package io.circe.derivation
 import io.circe.{ Codec, Decoder, Encoder }
 import io.circe.examples.scrooge._
 import io.circe.testing.CodecTests
+import munit.DisciplineSuite
 
 object ScroogeDerivationSuiteCodecs extends Serializable {
   implicit val decodeSomethingStruct: Decoder[SomethingStruct] = deriveDecoder
@@ -14,7 +15,7 @@ object ScroogeDerivationSuiteCodecs extends Serializable {
   val codecForBiggerStruct: Codec.AsObject[BiggerStruct] = deriveCodec
 }
 
-class ScroogeDerivationSuite extends CirceSuite {
+class ScroogeDerivationSuite extends CirceSuite with DisciplineSuite {
   import ScroogeDerivationSuiteCodecs._
 
   checkAll("Codec[SomethingStruct]", CodecTests[SomethingStruct].codec)
