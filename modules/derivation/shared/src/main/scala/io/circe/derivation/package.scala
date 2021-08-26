@@ -37,4 +37,22 @@ package object derivation {
     transformNames: String => String
   ): Codec.AsObject[A] =
     macro DerivationMacros.materializeCodecWithTransformNamesAndDefaults[A]
+
+  final def caseObjectDecoder[A](field: Option[(String, String)], obj: A): Decoder[A] = new Decoder[A] {
+    final def apply(c: HCursor): Decoder.Result[A] = (field, c.value.asObject) match {
+      case (_, None) =>
+        Left(DecodingFailure("require object", c.history))
+      case (None, Some(jsonObj)) =>
+        if (jsonObj.isEmpty)
+          Right(obj)
+        else
+          Left(DecodingFailure(s"expect {}, is ${c.value}", c.history))
+      case (Some((typeFieldName, typeName)), Some(jsonObj)) =>
+        if (jsonObj.size == 1 && jsonObj(typeFieldName) == Some(Json.fromString(typeName))) {
+          Right(obj)
+        } else {
+          Left(DecodingFailure("""{"${typeFieldName}":"${typeName}"}""", c.history))
+        }
+    }
+  }
 }

@@ -369,11 +369,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         (name, q"private[this] val $name = $value")
     }.unzip
 
-    val discriminatorCases: List[Tree] = subclassList
+    def discriminatorCases: List[Tree] = subclassList
       .zip(transformedNameNames)
       .map { case (s, value) =>
-        if(s.asClass.isModuleClass) {
-          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[_root_.io.circe.JsonObject].map[$tpe](_ => ${s.asClass.module})"""
+        if (s.asClass.isModuleClass) {
+          cq"""nme if nme.equals($value) => _root_.io.circe.derivation.caseObjectDecoder[$tpe]((${discriminator}: _root_.scala.Option[_root_.java.lang.String]).map(typeField => (typeField, $value)), ${s.asClass.module})"""
         } else {
           cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
         }
@@ -662,10 +662,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
       val name = transformName(nameOf(s))
-      val encodedValueTree = if(s.asClass.isModuleClass)
-        q"_root_.io.circe.JsonObject.empty"
-      else
-        q"_root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)"
+      val encodedValueTree =
+        if (s.asClass.isModuleClass)
+          q"_root_.io.circe.JsonObject.empty"
+        else
+          q"_root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)"
       cq"""value: $subTpe =>
         val encoded = $encodedValueTree
         val name = $name
@@ -764,8 +765,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val discriminatorCases: List[Tree] = subclassList
       .zip(transformedNameNames)
       .map { case (s, value) =>
-        if(s.asClass.isModuleClass) {
-          cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[_root_.io.circe.JsonObject].map[$tpe](_ => ${s.asClass.module})"""
+        if (s.asClass.isModuleClass) {
+          cq"""nme if nme.equals($value) => _root_.io.circe.derivation.caseObjectDecoder[$tpe]((${discriminator}: _root_.scala.Option[_root_.java.lang.String]).map(typeField => (typeField, $value)), ${s.asClass.module})"""
         } else {
           cq"""nme if nme.equals($value) => _root_.io.circe.Decoder[${s.asType}].map[$tpe](_root_.scala.Predef.identity)"""
         }
@@ -775,10 +776,11 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val encoderCases = subclassList.map { s =>
       val subTpe = s.asClass.toType
       val name = transformName(nameOf(s))
-      val encodedValueTree = if(s.asClass.isModuleClass)
-        q"_root_.io.circe.JsonObject.empty"
-      else
-        q"_root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)"
+      val encodedValueTree =
+        if (s.asClass.isModuleClass)
+          q"_root_.io.circe.JsonObject.empty"
+        else
+          q"_root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)"
       cq"""value: $subTpe =>
         val encoded = ${encodedValueTree}
         val name = $name
