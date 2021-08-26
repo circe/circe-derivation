@@ -64,19 +64,19 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     val transformNames = cfgTransformConstructorNames
     val Type = tq"$objName.type"
     val (decoder, encoder, codec) = (
-      () => q"""implicit val $decoderName: $DecoderClass[$Type] =
+      q"""implicit val $decoderName: $DecoderClass[$Type] =
             _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)""",
-      () => q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
+      q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
             _root_.io.circe.derivation.deriveEncoder[$Type]($transformNames, $cfgDiscriminator)""",
-      () => q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
+      q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
             _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)"""
     )
     codecType match {
-      case JsonCodecType.Both               => codec()
-      case JsonCodecType.SnakeCaseJsonCodec => codec()
-      case JsonCodecType.KebabCaseJsonCodec => codec()
-      case JsonCodecType.DecodeOnly         => decoder()
-      case JsonCodecType.EncodeOnly         => encoder()
+      case JsonCodecType.Both               => codec
+      case JsonCodecType.SnakeCaseJsonCodec => codec
+      case JsonCodecType.KebabCaseJsonCodec => codec
+      case JsonCodecType.DecodeOnly         => decoder
+      case JsonCodecType.EncodeOnly         => encoder
     }
   }
 
