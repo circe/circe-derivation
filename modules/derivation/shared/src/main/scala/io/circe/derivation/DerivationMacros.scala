@@ -369,7 +369,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         (name, q"private[this] val $name = $value")
     }.unzip
 
-    def discriminatorCases: List[Tree] = subclassList
+    val discriminatorCases: List[Tree] = subclassList
       .zip(transformedNameNames)
       .map { case (s, value) =>
         if (s.asClass.isModuleClass) {

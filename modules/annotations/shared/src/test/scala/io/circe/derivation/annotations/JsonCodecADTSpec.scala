@@ -13,30 +13,35 @@ object JsonCodecADTSpecSamples {
 
   @JsonCodec case class ADT1A(a: Int) extends ADT1
   @JsonCodec case class ADT1B(b: Int) extends ADT1
+  case object ADT1C extends ADT1
 
   @JsonCodec(Configuration.default.withDiscriminator("_type"))
   sealed trait ADT1Custom
 
   @JsonCodec case class ADT1CustomA(a: Int) extends ADT1Custom
   @JsonCodec case class ADT1CustomB(b: Int) extends ADT1Custom
+  case object ADT1CustomC extends ADT1Custom
 
   @JsonCodec(Configuration.default)
   sealed trait ADTTyped
 
   @JsonCodec case class ADTTypedA(a: Int) extends ADTTyped
   @JsonCodec case class ADTTypedB(b: Int) extends ADTTyped
+  case object ADTTypedC extends ADTTyped
 
   @JsonCodec(Configuration.default.withKebabCaseConstructorNames)
   sealed trait ADTTransformed
 
   @JsonCodec case class ADTTransformed1(a: Int) extends ADTTransformed
   @JsonCodec case class ADTTransformed2(b: Int) extends ADTTransformed
+  case object ADTTransformedC extends ADTTransformed
 
   @JsonCodec(Configuration.default.withSnakeCaseConstructorNames.withDiscriminator("_type"))
   sealed trait ADTSnakeDiscriminator
 
   @JsonCodec case class ADTSnakeDiscriminatorA(a: Int) extends ADTSnakeDiscriminator
   @JsonCodec case class ADTSnakeDiscriminatorB(b: Int) extends ADTSnakeDiscriminator
+  case object ADTSnakeDiscriminatorC extends ADTSnakeDiscriminator
 }
 
 class JsonCodecADTSpec extends AnyWordSpec with Matchers {
@@ -61,6 +66,12 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
       parse("""{"ADT1B":{"b":1}}""").flatMap(_.as[ADT1]) should be(
         Right(b1)
       )
+
+      val c1: ADT1 = ADT1C
+      c1.asJson.printWith(printer) should be("""{"ADT1C":{}}""")
+      parse("""{"ADT1C":{}}""").flatMap(_.as[ADT1]) should be(
+        Right(c1)
+      )
     }
 
     "serialize discriminator custom fieldname" in {
@@ -73,6 +84,10 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
 
       b1.asJson.printWith(printer) should be("""{"b":1,"_type":"ADT1CustomB"}""")
       parse("""{"b":1,"_type":"ADT1CustomB"}""").flatMap(_.as[ADT1Custom]) should be(Right(b1))
+
+      val c1: ADT1Custom = ADT1CustomC
+      c1.asJson.printWith(printer) should be("""{"_type":"ADT1CustomC"}""")
+      parse("""{"_type":"ADT1CustomC"}""").flatMap(_.as[ADT1Custom]) should be(Right(c1))
     }
 
     "serialize discriminator typed" in {
@@ -89,6 +104,13 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
       parse("""{"ADTTypedB":{"b":1}}""").flatMap(_.as[ADTTyped]) should be(
         Right(b1)
       )
+
+      val c1: ADTTyped = ADTTypedC(1)
+
+      c1.asJson.printWith(printer) should be("""{"ADTTypedC":{}}""")
+      parse("""{"ADTTypedC":{}}""").flatMap(_.as[ADTTyped]) should be(
+        Right(c1)
+      )
     }
 
     "transform constructor names" in {
@@ -101,6 +123,11 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
 
       b1.asJson.printWith(printer) should be("""{"adt-transformed2":{"b":1}}""")
       parse("""{"adt-transformed2":{"b":1}}""").right.get.as[ADTTransformed] should be(Right(b1))
+
+      val c1: ADTTransformed = ADTTransformed3
+
+      c1.asJson.printWith(printer) should be("""{"adt-transformed3":{}}""")
+      parse("""{"adt-transformed3":{}}""").right.get.as[ADTTransformed] should be(Right(c1))
     }
 
     "transform constructor names with a discriminator" in {
@@ -113,6 +140,11 @@ class JsonCodecADTSpec extends AnyWordSpec with Matchers {
 
       b1.asJson.printWith(printer) should be("""{"b":1,"_type":"adt_snake_discriminator_b"}""")
       parse("""{"b":1,"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(b1))
+
+      val c1: ADTSnakeDiscriminator = ADTSnakeDiscriminatorC
+      c1.asJson.printWith(printer) should be("""{"_type":"adt_snake_discriminator_c"}""")
+      parse("""{"_type":"adt_snake_discriminator_b"}""").right.get.as[ADTSnakeDiscriminator] should be(Right(c1))
+
     }
   }
 }
