@@ -37,9 +37,9 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
        }
        """
     case List(
-          clsDef: ClassDef,
-          q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
-        ) if isCaseClassOrSealed(clsDef) =>
+      clsDef: ClassDef,
+      q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
+    ) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
        object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
@@ -47,7 +47,37 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
          ${codec(clsDef)}
        }
        """
+    case List(q"case object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }") =>
+      q"""
+       case object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
+      ..$objDefs
+       ${caseObjectCodec(objName)}
+      }
+      """
     case _ => c.abort(c.enclosingPosition, "Invalid annotation target: must be a case class or a sealed trait/class")
+  }
+
+  private[this] def caseObjectCodec(objName: TermName) = {
+    val decoderName = TermName("decode" + objName)
+    val encoderName = TermName("encode" + objName)
+    val codecName = TermName("codecFor" + objName)
+    val transformNames = cfgTransformConstructorNames
+    val Type = tq"$objName.type"
+    val (decoder, encoder, codec) = (
+      q"""implicit val $decoderName: $DecoderClass[$Type] =
+            _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)""",
+      q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
+            _root_.io.circe.derivation.deriveEncoder[$Type]($transformNames, $cfgDiscriminator)""",
+      q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
+            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)"""
+    )
+    codecType match {
+      case JsonCodecType.Both               => codec
+      case JsonCodecType.SnakeCaseJsonCodec => codec
+      case JsonCodecType.KebabCaseJsonCodec => codec
+      case JsonCodecType.DecodeOnly         => decoder
+      case JsonCodecType.EncodeOnly         => encoder
+    }
   }
 
   private[this] val DecoderClass = typeOf[Decoder[_]].typeSymbol.asType
