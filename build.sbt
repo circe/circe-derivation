@@ -31,7 +31,7 @@ val catsVersion = "2.7.0"
 val circeVersion = "0.14.1"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.13.0-M5"
-val scalaCheckVersion = "1.15.4"
+val scalaCheckVersion = "1.16.0"
 val scalaJavaTimeVersion = "2.3.0"
 
 def priorTo2_13(scalaVersion: String): Boolean =
