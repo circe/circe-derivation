@@ -361,7 +361,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val subclassList: List[Symbol] = subclasses.toList
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -425,8 +433,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
@@ -559,7 +575,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] =
@@ -656,7 +680,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
@@ -748,8 +780,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     // We don't _really_ care about the order but want to be sure its stable here.
     val subclassList: List[Symbol] = subclasses.toList
 
-    def transformName(name: String): Tree =
-      transformConstructorNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -888,8 +928,16 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
+    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
