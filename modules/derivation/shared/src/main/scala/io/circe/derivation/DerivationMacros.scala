@@ -360,7 +360,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     // We don't _really_ care about the order but want to be sure its stable here.
     val subclassList: List[Symbol] = subclasses.toList
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
+    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -425,7 +426,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
+      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
@@ -557,7 +558,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
+    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] =
@@ -653,7 +655,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
+    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
@@ -745,7 +748,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     // We don't _really_ care about the order but want to be sure its stable here.
     val subclassList: List[Symbol] = subclasses.toList
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
+    def transformName(name: String): Tree =
+      transformConstructorNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -885,7 +889,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"$f($name)")
+      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
