@@ -361,7 +361,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val subclassList: List[Symbol] = subclasses.toList
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -426,7 +426,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
@@ -559,7 +559,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] =
@@ -656,7 +656,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
@@ -749,7 +749,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val subclassList: List[Symbol] = subclasses.toList
 
     def transformName(name: String): Tree =
-      transformConstructorNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      transformConstructorNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
@@ -889,7 +889,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     def transformName(name: String): Tree =
-      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree)))(name)}")
+      transformMemberNames.fold[Tree](q"$name")(f => q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}")
 
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
