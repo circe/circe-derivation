@@ -204,6 +204,18 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     s"Could not identify primary constructor for $tpe"
   )
 
+  private[this] def transformName(name: String, transformExpr: Option[c.Expr[String => String]]
+  ): Tree = transformExpr.fold[Tree](q"$name")(
+      f => try {
+        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
+      } catch {
+        case ex: Throwable => {
+          c.warning(c.enclosingPosition, "Failed to transform names at compile time")
+          q"$f($name)"
+        }
+      }
+    )
+
   private[this] def checkValSafety(owner: Symbol)(tree: Tree): Boolean = tree match {
     case q"$f(...$x)" if x.nonEmpty => checkValSafety(owner)(f) && x.forall(_.forall(checkValSafety(owner)))
     case x if x.isTerm              => x.symbol.owner == owner
@@ -360,21 +372,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     // We don't _really_ care about the order but want to be sure its stable here.
     val subclassList: List[Symbol] = subclasses.toList
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
         val name = TermName(s"name$i")
-        val value = transformName(nameOf(s))
+        val value = transformName(nameOf(s), transformConstructorNames)
         (name, q"private[this] val $name = $value")
     }.unzip
 
@@ -433,17 +434,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
         c.Expr[Decoder[T]](
@@ -478,7 +468,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val last: Tree = q"""
           {
             val $resName: _root_.io.circe.Decoder.Result[${reversed.head._1.tpe}] =
-              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName)}
+              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName(_, transformMemberNames))}
 
             if ($resName.isRight) {
               val ${reversed.head._2}: ${reversed.head._1.tpe} =
@@ -499,7 +489,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               repr,
               member,
               useDefaults,
-              transformName
+              transformName(_, transformMemberNames)
             )}
 
               if ($resName.isRight) {
@@ -516,7 +506,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             (
               q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
-                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
+                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName(_, transformMemberNames))}
             """,
               resultName
             )
@@ -574,17 +564,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     productRepr(tpe).fold(fail(tpe)) { repr =>
       val instanceDefs: List[Tree] =
         repr.instances.map(_.encoder).map { case instance @ Instance(_, instanceType, name) =>
@@ -613,7 +592,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               ) =>
             repr.encoder(tpe) match {
               case Instance(_, _, instanceName) =>
-                val realName = keyName.getOrElse(transformName(decodedName))
+                val realName = keyName.getOrElse(transformName(decodedName, transformMemberNames))
 
                 if (noSerializeDefault && defaultValue.isDefined) {
                   q"""
@@ -647,10 +626,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val fields: List[Tree] = repr.paramLists.flatten.map { case Member(name, decodedName, tpe, keyName, _, _) =>
           repr.encoder(tpe) match {
             case Instance(_, _, instanceName) =>
-              val realName = keyName.getOrElse(transformName(decodedName))
+              val realName = keyName.getOrElse(transformName(decodedName, transformMemberNames))
               q"""
               _root_.scala.Tuple2.apply[_root_.java.lang.String, _root_.io.circe.Json](
-                ${transformName(decodedName)},
+                ${transformName(decodedName, transformMemberNames)},
                 this.$instanceName.apply(a.$name)
               )
             """
@@ -679,20 +658,9 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Encoder.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     val encoderCases = subclasses.map { s =>
       val subTpe = s.asClass.toType
-      val name = transformName(nameOf(s))
+      val name = transformName(nameOf(s), transformConstructorNames)
 
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
@@ -780,21 +748,10 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     // We don't _really_ care about the order but want to be sure its stable here.
     val subclassList: List[Symbol] = subclasses.toList
 
-    def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform constructor names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     val (transformedNameNames: List[TermName], transformedNameDefs: List[Tree]) = subclassList.zipWithIndex.map {
       case (s, i) =>
         val name = TermName(s"name$i")
-        val value = transformName(nameOf(s))
+        val value = transformName(nameOf(s), transformConstructorNames)
         (name, q"private[this] val $name = $value")
     }.unzip
 
@@ -807,7 +764,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
     val encoderCases = subclassList.map { s =>
       val subTpe = s.asClass.toType
-      val name = transformName(nameOf(s))
+      val name = transformName(nameOf(s), transformConstructorNames)
 
       cq"""value: $subTpe =>
         val encoded = _root_.io.circe.Encoder.AsObject[$subTpe].encodeObject(value)
@@ -928,17 +885,6 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
-    def transformName(name: String): Tree = transformMemberNames.fold[Tree](q"$name")(
-      f => try {
-        q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
-      } catch {
-        case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform member names at compile time")
-          q"$f($name)"
-        }
-      }
-    )
-
     productRepr(tpe).fold(fail(tpe)) { repr =>
       if (repr.paramLists.flatten.isEmpty) {
         c.Expr[Codec.AsObject[T]](
@@ -982,7 +928,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               ) =>
             repr.encoder(tpe) match {
               case Instance(_, _, instanceName) =>
-                val realName = keyName.getOrElse(transformName(decodedName))
+                val realName = keyName.getOrElse(transformName(decodedName, transformMemberNames))
 
                 if (noSerializeDefault && defaultValue.isDefined) {
                   q"""
@@ -1016,7 +962,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         val last: Tree = q"""
           {
             val $resName: _root_.io.circe.Decoder.Result[${reversed.head._1.tpe}] =
-              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName)}
+              ${productMemberDecoding(repr, reversed.head._1, useDefaults, transformName(_, transformMemberNames))}
 
             if ($resName.isRight) {
               val ${reversed.head._2}: ${reversed.head._1.tpe} =
@@ -1037,7 +983,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               repr,
               member,
               useDefaults,
-              transformName
+              transformName(_, transformMemberNames)
             )}
 
               if ($resName.isRight) {
@@ -1054,7 +1000,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             (
               q"""
               val $resultName: _root_.io.circe.Decoder.AccumulatingResult[${member.tpe}] =
-                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName)}
+                ${productMemberAccumulatingDecoding(repr, member, useDefaults, transformName(_, transformMemberNames))}
             """,
               resultName
             )
