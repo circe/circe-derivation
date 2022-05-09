@@ -210,7 +210,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         q"${c.eval(c.Expr[String => String](c.untypecheck(f.tree.duplicate)))(name)}"
       } catch {
         case ex: Throwable => {
-          c.warning(c.enclosingPosition, "Failed to transform names at compile time")
+          c.warning(c.enclosingPosition, "Failed to transform names at compile time. Transformation will happen at runtime on codec invocation instead. This is due to the limitations of scala.reflect.macros.blackbox.Context#eval")
           q"$f($name)"
         }
       }
