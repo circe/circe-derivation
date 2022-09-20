@@ -11,3 +11,6 @@ target/
 tmp/
 .bloop
 .metals
+.vscode
+project/project
+project/metals.sbt
