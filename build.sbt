@@ -8,7 +8,7 @@ ThisBuild / tlBaseVersion := "0.13"
 ThisBuild / tlCiReleaseTags := true
 
 ThisBuild / organization := "io.circe"
-ThisBuild / tlSonatypeUseLegacyHost := false
+ThisBuild / tlSonatypeUseLegacyHost := true
 ThisBuild / crossScalaVersions := List(Scala212V, Scala213V) // List(Scala3V, Scala212V, Scala213V)
 ThisBuild / scalaVersion := Scala213V
 
