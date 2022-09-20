@@ -1,30 +1,53 @@
 import sbtcrossproject.{ CrossType, crossProject }
-import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
-import scala.xml.transform.{ RewriteRule, RuleTransformer }
+
+val Scala212V: String = "2.12.15"
+val Scala213V: String = "2.13.8"
+// val Scala3V: String = "3.1.3" - unsupported yet
+
+ThisBuild / tlBaseVersion := "0.13"
+ThisBuild / tlCiReleaseTags := true
 
 ThisBuild / organization := "io.circe"
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
-ThisBuild / githubWorkflowPublishTargetBranches := Nil
-ThisBuild / githubWorkflowBuild := Seq(
-  WorkflowStep.Use(
-    UseRef.Public(
-      "codecov",
-      "codecov-action",
-      "v1"
+ThisBuild / tlSonatypeUseLegacyHost := false
+ThisBuild / crossScalaVersions := List(Scala212V, Scala213V) // List(Scala3V, Scala212V, Scala213V)
+ThisBuild / scalaVersion := Scala213V
+
+ThisBuild / githubWorkflowJavaVersions := Seq("8", "11", "17").map(JavaSpec.temurin)
+
+ThisBuild / githubWorkflowAddedJobs ++= Seq(
+  WorkflowJob(
+    id = "scalafmt",
+    name = "Scalafmt and Scalastyle",
+    scalas = List(crossScalaVersions.value.last),
+    steps = List(WorkflowStep.Checkout) ++ WorkflowStep.SetupJava(
+      List(githubWorkflowJavaVersions.value.last)
+    ) ++ githubWorkflowGeneratedCacheSteps.value ++ List(
+      WorkflowStep.Sbt(
+        List("+scalafmtCheckAll", "scalafmtSbtCheck", "scalastyle"),
+        name = Some("Scalafmt and Scalastyle tests")
+      )
+    )
+  ),
+  WorkflowJob(
+    id = "coverage",
+    name = "Generate coverage report",
+    scalas = crossScalaVersions.value.filterNot(_.startsWith("3.")).toList,
+    steps = List(WorkflowStep.Checkout) ++ WorkflowStep.SetupJava(
+      List(githubWorkflowJavaVersions.value.last)
+    ) ++ githubWorkflowGeneratedCacheSteps.value ++ List(
+      WorkflowStep.Sbt(List("coverage", "rootJVM/test", "coverageAggregate")),
+      WorkflowStep.Use(
+        UseRef.Public(
+          "codecov",
+          "codecov-action",
+          "v2"
+        ),
+        params = Map(
+          "flags" -> List("${{matrix.scala}}", "${{matrix.java}}").mkString(",")
+        )
+      )
     )
   )
-)
-
-val compilerOptions = Seq(
-  "-deprecation",
-  "-encoding",
-  "UTF-8",
-  "-feature",
-  "-language:existentials",
-  "-language:higherKinds",
-  "-unchecked",
-  "-Ywarn-dead-code",
-  "-Ywarn-numeric-widen"
 )
 
 val catsVersion = "2.7.0"
@@ -40,20 +63,16 @@ def priorTo2_13(scalaVersion: String): Boolean =
     case _                              => false
   }
 
+// there's a bunch of unused params and bits in macros.
+// This config ought to be removed at somepoint. 
+// Warning sites ought be either fixed, or annotated w/ @nowarn.
+def removeWarningsSettings = Seq(
+  scalacOptions ~= {
+    _.filterNot(_.startsWith("-Wunused"))
+  }
+)
+
 val baseSettings = Seq(
-  scalacOptions ++= compilerOptions,
-  scalacOptions ++= (
-    if (priorTo2_13(scalaVersion.value))
-      Seq(
-        "-Xfuture",
-        "-Yno-adapted-args",
-        "-Ywarn-unused-import"
-      )
-    else
-      Seq(
-        "-Ywarn-unused:imports"
-      )
-  ),
   Compile / console / scalacOptions ~= {
     _.filterNot(Set("-Ywarn-unused-import"))
   },
@@ -64,14 +83,12 @@ val baseSettings = Seq(
   (Compile / scalastyleSources) ++= (Compile / unmanagedSourceDirectories).value
 )
 
-val allSettings = baseSettings ++ publishSettings
+val allSettings = baseSettings ++ removeWarningsSettings
 
-val docMappingsApiDir = settingKey[String]("Subdirectory in site target directory for API docs")
-
-val root = project
-  .in(file("."))
+val root = tlCrossRootProject
+  .enablePlugins(NoPublishPlugin)
   .settings(allSettings)
-  .settings(noPublishSettings)
+  .settings(removeWarningsSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-jawn" % circeVersion,
@@ -79,17 +96,16 @@ val root = project
     )
   )
   .aggregate(
-    derivationJVM,
-    derivationJS,
-    annotationsJVM,
-    annotationsJS,
+    derivation.jvm,
+    derivation.js,
+    annotations.jvm,
+    annotations.js,
     examplesScrooge,
-    examplesDerivationJVM,
-    examplesDerivationJS,
-    examplesGenericJVM,
-    examplesGenericJS
+    examplesDerivation.jvm,
+    examplesDerivation.js,
+    examplesGeneric.jvm,
+    examplesGeneric.js
   )
-  .dependsOn(derivationJVM)
 
 lazy val derivation = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -109,9 +125,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-testing" % circeVersion % Test,
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.2.2.0" % Test,
       "org.typelevel" %%% "discipline-scalatest" % "2.1.5" % Test
-    ),
-    ghpagesNoJekyll := true,
-    docMappingsApiDir := "api"
+    )
   )
   .dependsOn(examples % Test)
   .jvmSettings(
@@ -122,8 +136,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
         )
       else Nil
     ),
-    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion),
-    addMappingsToSiteDir(Compile / packageDoc / mappings, docMappingsApiDir)
+    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion)
   )
   .jsSettings(
     coverageEnabled := false,
@@ -131,9 +144,6 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
-
-lazy val derivationJVM = derivation.jvm
-lazy val derivationJS = derivation.js
 
 lazy val annotations = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -144,8 +154,6 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     name := "Circe derivation",
     moduleName := "circe-derivation-annotations",
     description := "circe derivation annotations",
-    ghpagesNoJekyll := true,
-    docMappingsApiDir := "api",
     libraryDependencies ++= Seq(
       scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided,
       scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided
@@ -164,8 +172,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
   )
   .dependsOn(derivation, derivation % "test->test")
   .jvmSettings(
-    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion),
-    addMappingsToSiteDir(Compile / packageDoc / mappings, docMappingsApiDir)
+    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion)
   )
   .jsSettings(
     coverageEnabled := false,
@@ -174,15 +181,12 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
 
-lazy val annotationsJVM = annotations.jvm
-lazy val annotationsJS = annotations.js
-
 lazy val examples = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("examples"))
   .settings(allSettings)
-  .settings(noPublishSettings)
+  .enablePlugins(NoPublishPlugin)
   .settings(
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-testing" % circeVersion,
@@ -194,13 +198,10 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
     coverageEnabled := false
   )
 
-lazy val examplesJVM = examples.jvm
-lazy val examplesJS = examples.js
-
 lazy val examplesScrooge = project
   .in(file("examples/scrooge"))
   .settings(allSettings)
-  .settings(noPublishSettings)
+  .enablePlugins(NoPublishPlugin)
   .settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
@@ -232,7 +233,7 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("examples/derivation"))
   .settings(allSettings)
-  .settings(noPublishSettings)
+  .enablePlugins(NoPublishPlugin)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*",
     wartremoverErrors ++= Warts.unsafe
@@ -243,15 +244,12 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(derivation, examples)
 
-lazy val examplesDerivationJVM = examplesDerivation.jvm
-lazy val examplesDerivationJS = examplesDerivation.js
-
 lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("examples/generic"))
   .settings(allSettings)
-  .settings(noPublishSettings)
+  .enablePlugins(NoPublishPlugin)
   .settings(
     coverageExcludedPackages := "io.circe.examples.*"
   )
@@ -270,71 +268,3 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(examples)
-
-lazy val examplesGenericJVM = examplesGeneric.jvm
-lazy val examplesGenericJS = examplesGeneric.js
-
-lazy val noPublishSettings = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false
-)
-
-lazy val publishSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseVcsSign := true,
-  homepage := Some(url("https://github.com/circe/circe-derivation")),
-  licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-  publishMavenStyle := true,
-  Test / publishArtifact := false,
-  pomIncludeRepository := { _ => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots".at(nexus + "content/repositories/snapshots"))
-    else
-      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
-  },
-  autoAPIMappings := true,
-  apiURL := Some(url("https://circe.github.io/circe-derivation/api/")),
-  scmInfo := Some(
-    ScmInfo(
-      url("https://github.com/circe/circe-derivation"),
-      "scm:git:git@github.com:circe/circe-derivation.git"
-    )
-  ),
-  developers := List(
-    Developer(
-      "travisbrown",
-      "Travis Brown",
-      "travisrobertbrown@gmail.com",
-      url("https://twitter.com/travisbrown")
-    )
-  ),
-  pomPostProcess := { (node: XmlNode) =>
-    new RuleTransformer(
-      new RewriteRule {
-        private def isTestScope(elem: Elem): Boolean =
-          elem.label == "dependency" && elem.child.exists(child => child.label == "scope" && child.text == "test")
-
-        override def transform(node: XmlNode): XmlNodeSeq = node match {
-          case elem: Elem if isTestScope(elem) => Nil
-          case _                               => node
-        }
-      }
-    ).transform(node).head
-  }
-)
-
-credentials ++= (
-  for {
-    username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-    password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-  } yield Credentials(
-    "Sonatype Nexus Repository Manager",
-    "oss.sonatype.org",
-    username,
-    password
-  )
-).toSeq

@@ -1,6 +1,5 @@
-addSbtPlugin("com.codecommit" % "sbt-github-actions" % "0.13.0")
-addSbtPlugin("com.github.sbt" % "sbt-release" % "1.1.0")
-addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-ci-release" % "0.4.13")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-settings" % "0.4.13")
 // Only needed for testing.
 addSbtPlugin("com.twitter" % "scrooge-sbt-plugin" % "20.4.1")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
