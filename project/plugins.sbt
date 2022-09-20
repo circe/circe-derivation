@@ -1,5 +1,5 @@
-addSbtPlugin("org.typelevel" % "sbt-typelevel-ci-release" % "0.4.13")
-addSbtPlugin("org.typelevel" % "sbt-typelevel-settings" % "0.4.13")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-ci-release" % "0.4.14")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-settings" % "0.4.14")
 // Only needed for testing.
 addSbtPlugin("com.twitter" % "scrooge-sbt-plugin" % "20.4.1")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
