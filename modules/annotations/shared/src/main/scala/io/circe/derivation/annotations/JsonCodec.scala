@@ -37,9 +37,9 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
        }
        """
     case List(
-      clsDef: ClassDef,
-      q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
-    ) if isCaseClassOrSealed(clsDef) =>
+          clsDef: ClassDef,
+          q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
+        ) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
        object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
@@ -112,7 +112,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
           case q"new ${`macroName`}()"              => (JsonCodecType.Both, defaultCfg)
           case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
           case q"new ${`macroName`}($cfg)"          => (codecFrom(c.typecheck(cfg)), cfg)
-          case _                                    => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
+          case _ => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
         }
     }
   }
@@ -162,10 +162,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     } else {
       val tparamNames = tparams.map(_.name)
       def mkImplicitParams(prefix: String, typeSymbol: TypeSymbol) =
-        tparamNames.zipWithIndex.map { case (tparamName, i) =>
-          val paramName = TermName(s"$prefix$i")
-          val paramType = tq"$typeSymbol[$tparamName]"
-          q"$paramName: $paramType"
+        tparamNames.zipWithIndex.map {
+          case (tparamName, i) =>
+            val paramName = TermName(s"$prefix$i")
+            val paramType = tq"$typeSymbol[$tparamName]"
+            q"$paramName: $paramType"
         }
       val decodeParams = mkImplicitParams("decode", DecoderClass)
       val encodeParams = mkImplicitParams("encode", EncoderClass)
