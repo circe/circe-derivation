@@ -1,10 +1,32 @@
+/*
+ * Copyright 2022 circe
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.circe.derivation
 
 import cats.data.Validated
-import io.circe.{ Codec, Decoder, Encoder, Json }
-import io.circe.examples.{ Bar, Baz, Foo, Qux }
-import io.circe.syntax._
+import io.circe.Codec
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.Json
+import io.circe.examples.Bar
+import io.circe.examples.Baz
+import io.circe.examples.Foo
+import io.circe.examples.Qux
 import io.circe.examples._
+import io.circe.syntax._
 import io.circe.testing.CodecTests
 
 object TransformMemberNamesWithDefaultsSuiteCodecs extends Serializable {

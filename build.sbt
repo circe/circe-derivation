@@ -4,51 +4,16 @@ val Scala212V: String = "2.12.15"
 val Scala213V: String = "2.13.8"
 // val Scala3V: String = "3.1.3" - unsupported yet
 
+ThisBuild / circeRootOfCodeCoverage := Some("rootJVM")
 ThisBuild / tlBaseVersion := "0.13"
 ThisBuild / tlCiReleaseTags := true
+ThisBuild / tlFatalWarningsInCi := false // we currently have a lot of warnings that will need to be fixed
 
 ThisBuild / organization := "io.circe"
-ThisBuild / tlSonatypeUseLegacyHost := true
 ThisBuild / crossScalaVersions := List(Scala212V, Scala213V) // List(Scala3V, Scala212V, Scala213V)
 ThisBuild / scalaVersion := Scala213V
 
 ThisBuild / githubWorkflowJavaVersions := Seq("8", "11", "17").map(JavaSpec.temurin)
-
-ThisBuild / githubWorkflowAddedJobs ++= Seq(
-  WorkflowJob(
-    id = "scalafmt",
-    name = "Scalafmt and Scalastyle",
-    scalas = List(crossScalaVersions.value.last),
-    steps = List(WorkflowStep.Checkout) ++ WorkflowStep.SetupJava(
-      List(githubWorkflowJavaVersions.value.last)
-    ) ++ githubWorkflowGeneratedCacheSteps.value ++ List(
-      WorkflowStep.Sbt(
-        List("+scalafmtCheckAll", "scalafmtSbtCheck", "scalastyle"),
-        name = Some("Scalafmt and Scalastyle tests")
-      )
-    )
-  ),
-  WorkflowJob(
-    id = "coverage",
-    name = "Generate coverage report",
-    scalas = crossScalaVersions.value.filterNot(_.startsWith("3.")).toList,
-    steps = List(WorkflowStep.Checkout) ++ WorkflowStep.SetupJava(
-      List(githubWorkflowJavaVersions.value.last)
-    ) ++ githubWorkflowGeneratedCacheSteps.value ++ List(
-      WorkflowStep.Sbt(List("coverage", "rootJVM/test", "coverageAggregate")),
-      WorkflowStep.Use(
-        UseRef.Public(
-          "codecov",
-          "codecov-action",
-          "v2"
-        ),
-        params = Map(
-          "flags" -> List("${{matrix.scala}}", "${{matrix.java}}").mkString(",")
-        )
-      )
-    )
-  )
-)
 
 val catsVersion = "2.7.0"
 val circeVersion = "0.14.1"
@@ -63,32 +28,15 @@ def priorTo2_13(scalaVersion: String): Boolean =
     case _                              => false
   }
 
-// there's a bunch of unused params and bits in macros.
-// This config ought to be removed at somepoint. 
-// Warning sites ought be either fixed, or annotated w/ @nowarn.
-def removeWarningsSettings = Seq(
-  scalacOptions ~= {
-    _.filterNot(_.startsWith("-Wunused"))
-  }
-)
-
 val baseSettings = Seq(
-  Compile / console / scalacOptions ~= {
-    _.filterNot(Set("-Ywarn-unused-import"))
-  },
-  Test / console / scalacOptions ~= {
-    _.filterNot(Set("-Ywarn-unused-import"))
-  },
-  coverageHighlighting := true,
-  (Compile / scalastyleSources) ++= (Compile / unmanagedSourceDirectories).value
+  coverageHighlighting := true
 )
 
-val allSettings = baseSettings ++ removeWarningsSettings
+val allSettings = baseSettings
 
 val root = tlCrossRootProject
   .enablePlugins(NoPublishPlugin)
   .settings(allSettings)
-  .settings(removeWarningsSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-jawn" % circeVersion,
@@ -135,8 +83,8 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
           "com.stripe" %% "scrooge-shapes" % "0.1.0" % Test
         )
       else Nil
-    ),
-    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion)
+    )
+    // mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion)
   )
   .jsSettings(
     coverageEnabled := false,
@@ -235,8 +183,7 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
   .settings(allSettings)
   .enablePlugins(NoPublishPlugin)
   .settings(
-    coverageExcludedPackages := "io.circe.examples.*",
-    wartremoverErrors ++= Warts.unsafe
+    coverageExcludedPackages := "io.circe.examples.*"
   )
   .jsSettings(
     coverageEnabled := false
