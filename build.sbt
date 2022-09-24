@@ -55,6 +55,10 @@ val root = tlCrossRootProject
     examplesGeneric.js
   )
 
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(CirceIoSitePlugin)
+
 lazy val derivation = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Full)
