@@ -55,9 +55,7 @@ val root = tlCrossRootProject
     examplesGeneric.js
   )
 
-lazy val docs = project
-  .in(file("site"))
-  .enablePlugins(CirceIoSitePlugin)
+lazy val docs = project.in(file("site")).enablePlugins(CirceIoSitePlugin)
 
 lazy val derivation = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -88,11 +86,8 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
         )
       else Nil
     )
-    // mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation" % previousCirceDerivationVersion)
   )
   .jsSettings(
-    coverageEnabled := false,
-    coverageExcludedPackages := "io.circe.derivation.*",
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
@@ -123,12 +118,7 @@ lazy val annotations = crossProject(JSPlatform, JVMPlatform)
     )
   )
   .dependsOn(derivation, derivation % "test->test")
-  .jvmSettings(
-    mimaPreviousArtifacts := Set("io.circe" %% "circe-derivation-annotations" % previousCirceDerivationVersion)
-  )
   .jsSettings(
-    coverageEnabled := false,
-    coverageExcludedPackages := "io.circe.derivation.*",
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
   )
   .jvmConfigure(_.dependsOn(examplesScrooge % Test))
@@ -145,9 +135,6 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform)
       "org.scalacheck" %%% "scalacheck" % scalaCheckVersion,
       "org.typelevel" %%% "cats-core" % catsVersion
     )
-  )
-  .jsSettings(
-    coverageEnabled := false
   )
 
 lazy val examplesScrooge = project
@@ -186,12 +173,6 @@ lazy val examplesDerivation = crossProject(JSPlatform, JVMPlatform)
   .in(file("examples/derivation"))
   .settings(allSettings)
   .enablePlugins(NoPublishPlugin)
-  .settings(
-    coverageExcludedPackages := "io.circe.examples.*"
-  )
-  .jsSettings(
-    coverageEnabled := false
-  )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(derivation, examples)
 
@@ -201,9 +182,6 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
   .in(file("examples/generic"))
   .settings(allSettings)
   .enablePlugins(NoPublishPlugin)
-  .settings(
-    coverageExcludedPackages := "io.circe.examples.*"
-  )
   .settings(libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion)
   .jvmSettings(
     libraryDependencies ++= (
@@ -213,9 +191,6 @@ lazy val examplesGeneric = crossProject(JSPlatform, JVMPlatform)
         )
       else Nil
     )
-  )
-  .jsSettings(
-    coverageEnabled := false
   )
   .jvmConfigure(_.dependsOn(examplesScrooge))
   .dependsOn(examples)

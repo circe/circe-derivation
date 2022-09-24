@@ -135,11 +135,11 @@ jobs:
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p examples/.jvm/target target modules/derivation/js/target examples/derivation/jvm/target examples/generic/jvm/target .js/target examples/scrooge/target examples/.js/target modules/annotations/jvm/target .jvm/target .native/target modules/derivation/jvm/target examples/derivation/js/target examples/generic/js/target modules/annotations/js/target project/target
+        run: mkdir -p examples/.jvm/target target modules/derivation/js/target examples/derivation/jvm/target examples/generic/jvm/target .js/target site/target examples/scrooge/target examples/.js/target modules/annotations/jvm/target .jvm/target .native/target modules/derivation/jvm/target examples/derivation/js/target examples/generic/js/target modules/annotations/js/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar examples/.jvm/target target modules/derivation/js/target examples/derivation/jvm/target examples/generic/jvm/target .js/target examples/scrooge/target examples/.js/target modules/annotations/jvm/target .jvm/target .native/target modules/derivation/jvm/target examples/derivation/js/target examples/generic/js/target modules/annotations/js/target project/target
+        run: tar cf targets.tar examples/.jvm/target target modules/derivation/js/target examples/derivation/jvm/target examples/generic/jvm/target .js/target site/target examples/scrooge/target examples/.js/target modules/annotations/jvm/target .jvm/target .native/target modules/derivation/jvm/target examples/derivation/js/target examples/generic/js/target modules/annotations/js/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
@@ -323,3 +323,88 @@ jobs:
       - uses: codecov/codecov-action@v2
         with:
           flags: ${{matrix.scala}},${{matrix.java}}
+
+  site:
+    name: Generate Site
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.8]
+        java: [temurin@8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Download Java (temurin@8)
+        id: download-java-temurin-8
+        if: matrix.java == 'temurin@8'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Setup Java (temurin@8)
+        if: matrix.java == 'temurin@8'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 8
+          jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
+
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
+
+      - name: Download Java (temurin@17)
+        id: download-java-temurin-17
+        if: matrix.java == 'temurin@17'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 17
+          jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
+
+      - name: Cache sbt
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ~/.cache/coursier/v1
+            ~/AppData/Local/Coursier/Cache/v1
+            ~/Library/Caches/Coursier/v1
+          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Generate site
+        run: sbt '++${{ matrix.scala }}' docs/tlSite
+
+      - name: Publish site
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/target/docs/site
+          keep_files: true
