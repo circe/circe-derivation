@@ -839,10 +839,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         {
           val field = c.downField($realFieldName)
 
-          ${repr.decoder(member.tpe).name}.tryDecode(field) match {
-            case r @ _root_.scala.Right(_) if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNone(r) => r
-            case l @ _root_.scala.Left(_) if field.succeeded && !field.focus.exists(_.isNull) => l
-            case _ => _root_.scala.Right($defaultValue)
+          if ($useDefaults) {
+            ${repr.decoder(member.tpe).name}.tryDecode(field) match {
+              case r @ _root_.scala.Right(_) if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNone(r) => r
+              case l @ _root_.scala.Left(_) if field.succeeded && !field.focus.exists(_.isNull) => l
+              case _ => _root_.scala.Right($defaultValue)
+            }
+          } else {
+            ${repr.decoder(member.tpe).name}.tryDecode(field)
           }
         }
         """
@@ -865,11 +869,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
         {
           val field = c.downField($realFieldName)
 
-          ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field) match {
-            case v @ _root_.cats.data.Validated.Valid(_)
-              if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNoneAccumulating(v) => v
-            case i @ _root_.cats.data.Validated.Invalid(_) if field.succeeded && !field.focus.exists(_.isNull) => i
-            case _ => _root_.cats.data.Validated.Valid($defaultValue)
+          if ($useDefaults) {
+            ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field) match {
+              case v @ _root_.cats.data.Validated.Valid(_)
+                if !_root_.io.circe.derivation.DerivationMacros.isKeyMissingNoneAccumulating(v) => v
+              case i @ _root_.cats.data.Validated.Invalid(_) if field.succeeded && !field.focus.exists(_.isNull) => i
+              case _ => _root_.cats.data.Validated.Valid($defaultValue)
+            }
+          } else {
+            ${repr.decoder(member.tpe).name}.tryDecodeAccumulating(field)
           }
         }
         """
