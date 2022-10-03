@@ -47,6 +47,10 @@ object DerivationSuiteCodecs extends Serializable {
   implicit val encodeWithDefaults: Encoder[WithDefaults] = deriveEncoder(identity, None)
   val codecForWithDefaults: Codec[WithDefaults] = deriveCodec(identity, true, None)
 
+  implicit val decodeWithoutDefaults: Decoder[WithoutDefaults] = deriveDecoder(identity, false, None)
+  implicit val encodeWithoutDefaults: Encoder[WithoutDefaults] = deriveEncoder(identity, None)
+  val codecForWithoutDefaults: Codec[WithoutDefaults] = deriveCodec(identity, false, None)
+
   implicit val decodeWithJson: Decoder[WithJson] = deriveDecoder(identity, true, None)
   implicit val encodeWithJson: Encoder[WithJson] = deriveEncoder(identity, None)
   val codecForWithJson: Codec[WithJson] = deriveCodec(identity, true, None)
@@ -361,6 +365,16 @@ class DerivationSuite extends CirceSuite {
   )
 
   checkAll(
+    "CodecAgreementWithCodec[WithoutDefaults]",
+    CodecAgreementTests[WithoutDefaults](
+      codecForWithoutDefaults,
+      codecForWithoutDefaults,
+      decodeWithoutDefaults,
+      encodeWithoutDefaults
+    ).codecAgreement
+  )
+
+  checkAll(
     "CodecAgreementWithCodec[WithJson]",
     CodecAgreementTests[WithJson](
       codecForWithJson,
@@ -390,7 +404,7 @@ class DerivationSuite extends CirceSuite {
     ).codecAgreement
   )
 
-  "useDefaults" should "cause defaults to be used for missing fields" in {
+  "useDefaults" should "cause defaults to be used for missing fields when true" in {
     val expectedBothDefaults = WithDefaults(0, 1, List(""))
     val expectedOneDefault = WithDefaults(0, 1, Nil)
 
@@ -411,6 +425,40 @@ class DerivationSuite extends CirceSuite {
     assert(codecForWithDefaults.decodeAccumulating(j2.hcursor) === Validated.validNel(expectedOneDefault))
     assert(decodeWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
     assert(codecForWithDefaults.decodeAccumulating(j3.hcursor) === Validated.validNel(expectedBothDefaults))
+  }
+
+  "useDefaults" should "cause defaults to be ingored for missing fields when false" in {
+    val expectedEmptyDefault = WithoutDefaults(0, 2, None)
+    val expectedNoDefaults = WithoutDefaults(0, 2, Some(2))
+
+    val j1 = Json.obj("i" := 0)
+    val j2 = Json.obj("i" := 0, "j" := 2)
+    val j3 = Json.obj("i" := 0, "j" := 2, "k" := Json.Null)
+    val j4 = Json.obj("i" := 0, "j" := 2, "k" := Some(2))
+
+    val histories1 = List(CursorOp.DownField("j"))
+
+    assert(decodeWithoutDefaults.decodeJson(j1).leftMap(_.history) === Left(histories1))
+    assert(codecForWithoutDefaults.decodeJson(j1).leftMap(_.history) === Left(histories1))
+    assert(decodeWithoutDefaults.decodeJson(j2) == Right(expectedEmptyDefault))
+    assert(codecForWithoutDefaults.decodeJson(j2) === Right(expectedEmptyDefault))
+    assert(decodeWithoutDefaults.decodeJson(j3) == Right(expectedEmptyDefault))
+    assert(codecForWithoutDefaults.decodeJson(j3) === Right(expectedEmptyDefault))
+    assert(decodeWithoutDefaults.decodeJson(j4) === Right(expectedNoDefaults))
+    assert(codecForWithoutDefaults.decodeJson(j4) === Right(expectedNoDefaults))
+
+    val historiesNel1 = NonEmptyList.of[List[CursorOp]](
+      List(CursorOp.DownField("j"))
+    )
+
+    assert(decodeWithoutDefaults.decodeAccumulating(j1.hcursor).leftMap(_.map(_.history)) === Validated.invalid(historiesNel1))
+    assert(codecForWithoutDefaults.decodeAccumulating(j1.hcursor).leftMap(_.map(_.history)) === Validated.invalid(historiesNel1))
+    assert(decodeWithoutDefaults.decodeAccumulating(j2.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedEmptyDefault))
+    assert(codecForWithoutDefaults.decodeAccumulating(j2.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedEmptyDefault))
+    assert(decodeWithoutDefaults.decodeAccumulating(j3.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedEmptyDefault))
+    assert(codecForWithoutDefaults.decodeAccumulating(j3.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedEmptyDefault))
+    assert(decodeWithoutDefaults.decodeAccumulating(j4.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedNoDefaults))
+    assert(codecForWithoutDefaults.decodeAccumulating(j4.hcursor).leftMap(_.map(_.history)) === Validated.valid(expectedNoDefaults))
   }
 
   "Derived ADT decoders" should "preserve error accumulation" in {
