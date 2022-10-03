@@ -65,11 +65,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     val Type = tq"$objName.type"
     val (decoder, encoder, codec) = (
       q"""implicit val $decoderName: $DecoderClass[$Type] =
-            _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)""",
+            _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)""",
       q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
             _root_.io.circe.derivation.deriveEncoder[$Type]($transformNames, $cfgDiscriminator)""",
       q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)"""
     )
     codecType match {
       case JsonCodecType.Both               => codec
@@ -141,6 +141,8 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     q"$config.useDefaults"
   private[this] val cfgDiscriminator =
     q"$config.discriminator"
+  private[this] val cfgStrictDecoding =
+    q"$config.strictDecoding"
 
   private[this] def codec(clsDef: ClassDef): Tree = {
     val tpname = clsDef.name
@@ -153,11 +155,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tpname
       (
         q"""implicit val $decoderName: $DecoderClass[$Type] =
-            _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)""",
+            _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)""",
         q"""implicit val $encoderName: $AsObjectEncoderClass[$Type] =
             _root_.io.circe.derivation.deriveEncoder[$Type]($transformNames, $cfgDiscriminator)""",
         q"""implicit val $codecName: $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)"""
       )
     } else {
       val tparamNames = tparams.map(_.name)
@@ -172,13 +174,13 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
       val Type = tq"$tpname[..$tparamNames]"
       (
         q"""implicit def $decoderName[..$tparams](implicit ..$decodeParams): $DecoderClass[$Type] =
-           _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)""",
+           _root_.io.circe.derivation.deriveDecoder[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)""",
         q"""implicit def $encoderName[..$tparams](implicit ..$encodeParams): $AsObjectEncoderClass[$Type] =
            _root_.io.circe.derivation.deriveEncoder[$Type]($transformNames, $cfgDiscriminator)""",
         q"""implicit def $codecName[..$tparams](implicit
             ..${decodeParams ++ encodeParams}
           ): $AsObjectCodecClass[$Type] =
-            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator)"""
+            _root_.io.circe.derivation.deriveCodec[$Type]($transformNames, $cfgUseDefaults, $cfgDiscriminator, $cfgStrictDecoding)"""
       )
     }
     codecType match {

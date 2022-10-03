@@ -1,10 +1,10 @@
 package io.circe.derivation
 
 import cats.kernel.Eq
-import io.circe.{ Codec, Decoder, Encoder }
+import io.circe.{Codec, Decoder, Encoder}
 import org.scalacheck.Arbitrary
 
-object TransformMemberNamesExample {
+object StrictDecodingExample {
   case class User(firstName: String, lastName: String, role: Role, address: Address)
 
   object User {
@@ -20,8 +20,8 @@ object TransformMemberNamesExample {
     implicit val eqUser: Eq[User] = Eq.fromUniversalEquals
 
     implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase, None)
-    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, None, false)
-    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, None, false)
+    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, None, true)
+    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, None, true)
   }
 
   case class Role(title: String)
@@ -31,7 +31,7 @@ object TransformMemberNamesExample {
     implicit val eqRole: Eq[Role] = Eq.fromUniversalEquals
 
     implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase, None)
-    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, None, false)
+    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, None, true)
   }
 
   case class Address(number: Int, street: String, city: String)
@@ -50,23 +50,6 @@ object TransformMemberNamesExample {
     implicit val encodeAddress: Encoder[Address] =
       deriveEncoder(renaming.replaceWith("number" -> "#"), None)
     implicit val decodeAddress: Decoder[Address] =
-      deriveDecoder(renaming.replaceWith("number" -> "#"), true, None, false)
-  }
-
-  case class Abc(a: String, b: String, c: String)
-
-  object Abc {
-    implicit val arbitraryAbc: Arbitrary[Abc] = Arbitrary(
-      for {
-        a <- Arbitrary.arbitrary[String]
-        b <- Arbitrary.arbitrary[String]
-        c <- Arbitrary.arbitrary[String]
-      } yield Abc(a, b, c)
-    )
-
-    implicit val eqAbc: Eq[Abc] = Eq.fromUniversalEquals
-
-    implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x", None)
-    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", true, None, false)
+      deriveDecoder(renaming.replaceWith("number" -> "#"), true, None, true)
   }
 }
