@@ -3,7 +3,7 @@ import scala.xml.{ Elem, Node => XmlNode, NodeSeq => XmlNodeSeq }
 import scala.xml.transform.{ RewriteRule, RuleTransformer }
 
 ThisBuild / organization := "io.circe"
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.10")
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Use(
