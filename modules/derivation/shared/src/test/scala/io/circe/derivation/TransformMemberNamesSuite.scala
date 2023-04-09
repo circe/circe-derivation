@@ -7,26 +7,27 @@ import io.circe.syntax._
 import io.circe.testing.CodecTests
 
 object TransformMemberNamesSuiteCodecs extends Serializable {
-  implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, true, None, false)
   implicit val encodeFoo: Encoder.AsObject[Foo] = deriveEncoder(renaming.snakeCase, None)
-  val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase, true, None)
+  val codecForFoo: Codec.AsObject[Foo] = deriveCodec(renaming.snakeCase, true, None, false)
 
-  implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val decodeBar: Decoder[Bar] = deriveDecoder(renaming.snakeCase, true, None, false)
   implicit val encodeBar: Encoder.AsObject[Bar] = deriveEncoder(renaming.snakeCase, None)
-  val codecForBar: Codec.AsObject[Bar] = deriveCodec(renaming.snakeCase, true, None)
+  val codecForBar: Codec.AsObject[Bar] = deriveCodec(renaming.snakeCase, true, None, false)
 
-  implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase, true, None)
+  implicit val decodeBaz: Decoder[Baz] = deriveDecoder(renaming.snakeCase, true, None, false)
   implicit val encodeBaz: Encoder.AsObject[Baz] = deriveEncoder(renaming.snakeCase, None)
-  val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase, true, None)
+  val codecForBaz: Codec.AsObject[Baz] = deriveCodec(renaming.snakeCase, true, None, false)
 
   implicit def decodeQux[A: Decoder]: Decoder[Qux[A]] =
-    deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), true, None)
+    deriveDecoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), true, None, false)
   implicit def encodeQux[A: Encoder]: Encoder.AsObject[Qux[A]] =
     deriveEncoder(renaming.replaceWith("aa" -> "1", "bb" -> "2"), None)
   def codecForQux[A: Decoder: Encoder]: Codec.AsObject[Qux[A]] = deriveCodec(
     renaming.replaceWith("aa" -> "1", "bb" -> "2"),
     true,
-    None
+    None,
+    false
   )
 }
 

@@ -15,6 +15,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] val defaultDiscriminator =
     c.Expr[Option[String]](q"_root_.scala.None")
   private[this] val trueExpression = c.Expr[Boolean](q"true")
+  private[this] val falseExpression = c.Expr[Boolean](q"false")
 
   private[this] def failWithMessage(message: String): Nothing = c.abort(c.enclosingPosition, message)
   private[this] def nameOf(s: Symbol): String = s.asClass.name.decodedName.toString.trim
@@ -248,23 +249,25 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   }
 
   def materializeDecoder[T: c.WeakTypeTag]: c.Expr[Decoder[T]] =
-    materializeDecoderImpl[T](None, trueExpression, defaultDiscriminator)
+    materializeDecoderImpl[T](None, trueExpression, defaultDiscriminator, falseExpression)
 
   def materializeEncoder[T: c.WeakTypeTag]: c.Expr[Encoder.AsObject[T]] =
     materializeEncoderImpl[T](None, defaultDiscriminator)
 
   def materializeCodec[T: c.WeakTypeTag]: c.Expr[Codec.AsObject[T]] =
-    materializeCodecImpl[T](None, trueExpression, defaultDiscriminator)
+    materializeCodecImpl[T](None, trueExpression, defaultDiscriminator, falseExpression)
 
   def materializeDecoderWithTransformNames[T: c.WeakTypeTag](
     transformNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] =
     materializeDecoderImpl[T](
       Some(transformNames),
       useDefaults,
-      discriminator
+      discriminator,
+      strictDecoding
     )
 
   def materializeDecoderWithTransformNamesAndDefaults[T: c.WeakTypeTag](
@@ -273,7 +276,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     materializeDecoderImpl[T](
       Some(transformNames),
       trueExpression,
-      defaultDiscriminator
+      defaultDiscriminator,
+      falseExpression
     )
 
   def materializeEncoderWithTransformNames[T: c.WeakTypeTag](
@@ -290,12 +294,14 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   def materializeCodecWithTransformNames[T: c.WeakTypeTag](
     transformNames: c.Expr[String => String],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Codec.AsObject[T]] =
     materializeCodecImpl[T](
       Some(transformNames),
       useDefaults,
-      discriminator
+      discriminator,
+      strictDecoding
     )
 
   def materializeCodecWithTransformNamesAndDefaults[T: c.WeakTypeTag](
@@ -304,13 +310,15 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     materializeCodecImpl[T](
       Some(transformNames),
       trueExpression,
-      defaultDiscriminator
+      defaultDiscriminator,
+      falseExpression
     )
 
   private[this] def materializeCodecImpl[T: c.WeakTypeTag](
     transformNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -319,7 +327,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
       materializeCodecCaseClassImpl[T](
         transformNames,
         useDefaults,
-        discriminator
+        discriminator,
+        strictDecoding
       )
     } else {
       materializeCodecTraitImpl[T](
@@ -334,18 +343,20 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeDecoderImpl[T: c.WeakTypeTag](
     transformNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
     val subclasses = allSubclasses(tpe.typeSymbol.asClass)
     if (subclasses.isEmpty) {
-      materializeDecoderCaseClassImpl[T](transformNames, useDefaults)
+      materializeDecoderCaseClassImpl[T](transformNames, useDefaults, strictDecoding)
     } else {
       materializeDecoderTraitImpl[T](
         transformNames,
         subclasses,
-        discriminator
+        discriminator,
+        strictDecoding
       )
     }
   }
@@ -353,7 +364,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeDecoderTraitImpl[T: c.WeakTypeTag](
     transformConstructorNames: Option[c.Expr[String => String]],
     subclasses: Set[Symbol],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -420,7 +432,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   private[this] def materializeDecoderCaseClassImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
-    useDefaults: c.Expr[Boolean]
+    useDefaults: c.Expr[Boolean],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Decoder[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -527,7 +540,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           }
         """
 
-        c.Expr[Decoder[T]](
+        val nonStrictDecoder = c.Expr[Decoder[T]](
           q"""
             new _root_.io.circe.Decoder[$tpe] {
               ..$instanceDefs
@@ -546,6 +559,40 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
               ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = $resultAccumulating
             }
           """
+        )
+
+        val expectedFields: Tree = repr.paramListsWithNames.flatten match {
+          case Nil => q"""_root_.scala.Predef.Set.empty[String]"""
+          case head :: tail =>
+            tail.foldLeft(q"""_root_.scala.Predef.Set(${head._1.keyName.getOrElse(transformName(head._1.decodedName))})""") {
+              case (acc, (member, _)) =>
+                q"""$acc ++ _root_.scala.Predef.Set(${member.keyName.getOrElse(transformName(member.decodedName))})"""
+            }
+        }
+
+        c.Expr[Decoder[T]](
+          q"""
+            val nonStrictDecoder = $nonStrictDecoder
+
+            if ($strictDecoding) {
+              val expectedFields = $expectedFields
+              nonStrictDecoder.validate { cursor: _root_.io.circe.HCursor =>
+                val maybeUnexpectedErrors = for {
+                  json <- cursor.focus
+                  jsonKeys <- json.hcursor.keys
+                  unexpected = jsonKeys.toSet -- expectedFields
+                } yield {
+                  unexpected.toList.map { unexpectedField =>
+                    s"Unexpected field: [$$unexpectedField]; valid fields: $${expectedFields.mkString(", ")}"
+                  }
+                }
+
+                maybeUnexpectedErrors.getOrElse(List("Couldn't determine decoded fields."))
+              }
+            } else {
+              nonStrictDecoder
+            }
+         """
         )
       }
     }
@@ -880,7 +927,8 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
   private[this] def materializeCodecCaseClassImpl[T: c.WeakTypeTag](
     transformMemberNames: Option[c.Expr[String => String]],
     useDefaults: c.Expr[Boolean],
-    discriminator: c.Expr[Option[String]]
+    discriminator: c.Expr[Option[String]],
+    strictDecoding: c.Expr[Boolean]
   ): c.Expr[Codec.AsObject[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -1030,7 +1078,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
           }
         """
 
-        c.Expr[Codec.AsObject[T]](
+        val nonStrictCodec = c.Expr[Codec.AsObject[T]](
           q"""
           new _root_.io.circe.Codec.AsObject[$tpe] {
             ..$encoderInstanceDefs
@@ -1053,6 +1101,49 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
             ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = $resultAccumulating
           }
         """
+        )
+
+        val expectedFields: Tree = repr.paramListsWithNames.flatten match {
+          case Nil => q"""_root_.scala.Predef.Set.empty[String]"""
+          case head :: tail =>
+            tail.foldLeft(q"""_root_.scala.Predef.Set(${head._1.keyName.getOrElse(transformName(head._1.decodedName))})""") {
+              case (acc, (member, _)) =>
+                q"""$acc ++ _root_.scala.Predef.Set(${member.keyName.getOrElse(transformName(member.decodedName))})"""
+            }
+        }
+
+        c.Expr[Codec.AsObject[T]](
+          q"""
+            val nonStrictCodec = $nonStrictCodec
+
+            if ($strictDecoding) {
+              val expectedFields = $expectedFields
+              val strictDecoder = nonStrictCodec.validate { cursor: _root_.io.circe.HCursor =>
+                val maybeUnexpectedErrors = for {
+                  json <- cursor.focus
+                  jsonKeys <- json.hcursor.keys
+                  unexpected = jsonKeys.toSet -- expectedFields
+                } yield {
+                  unexpected.toList.map { unexpectedField =>
+                    s"Unexpected field: [$$unexpectedField]; valid fields: $${expectedFields.mkString(", ")}"
+                  }
+                }
+
+                maybeUnexpectedErrors.getOrElse(List("Couldn't determine decoded fields."))
+              }
+              new _root_.io.circe.Codec.AsObject[$tpe] {
+                final def encodeObject(a: $tpe): _root_.io.circe.JsonObject = nonStrictCodec.encodeObject(a)
+
+                final def apply(c: _root_.io.circe.HCursor): _root_.io.circe.Decoder.Result[$tpe] = strictDecoder(c)
+
+                final override def decodeAccumulating(
+                  c: _root_.io.circe.HCursor
+                ): _root_.io.circe.Decoder.AccumulatingResult[$tpe] = strictDecoder.decodeAccumulating(c)
+              }
+            } else {
+              nonStrictCodec
+            }
+         """
         )
       }
     }
