@@ -16,7 +16,7 @@
 
 package io.circe.derivation
 
-import com.stripe.scrooge.shapes._
+import com.stripe.scrooge.shapes._ // scalafix:ok
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.examples.scrooge._
