@@ -16,6 +16,7 @@
 
 package io.circe.examples.generic
 
+import com.stripe.scrooge.shapes._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.examples.scrooge.BiggerStruct
