@@ -15,11 +15,11 @@ ThisBuild / scalaVersion := Scala213V
 
 ThisBuild / githubWorkflowJavaVersions := Seq("8", "11", "17").map(JavaSpec.temurin)
 
-val catsVersion = "2.7.0"
+val catsVersion = "2.13.0"
 val circeVersion = "0.14.1"
 val paradiseVersion = "2.1.1"
 val previousCirceDerivationVersion = "0.13.0-M5"
-val scalaCheckVersion = "1.15.4"
+val scalaCheckVersion = "1.18.1"
 val scalaJavaTimeVersion = "2.3.0"
 
 def priorTo2_13(scalaVersion: String): Boolean =
