@@ -1,7 +1,25 @@
+/*
+ * Copyright 2017 circe
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.circe.derivation.annotations
 
-import io.circe.{ Codec, Decoder, Encoder }
-import scala.language.experimental.macros
+import io.circe.Codec
+import io.circe.Decoder
+import io.circe.Encoder
+
 import scala.reflect.macros.blackbox
 
 class JsonCodec(
@@ -37,9 +55,9 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
        }
        """
     case List(
-      clsDef: ClassDef,
-      q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
-    ) if isCaseClassOrSealed(clsDef) =>
+          clsDef: ClassDef,
+          q"object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf => ..$objDefs }"
+        ) if isCaseClassOrSealed(clsDef) =>
       q"""
        $clsDef
        object $objName extends { ..$objEarlyDefs } with ..$objParents { $objSelf =>
@@ -112,7 +130,7 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
           case q"new ${`macroName`}()"              => (JsonCodecType.Both, defaultCfg)
           case q"new ${`macroName`}(config = $cfg)" => (codecFrom(c.typecheck(cfg)), cfg)
           case q"new ${`macroName`}($cfg)"          => (codecFrom(c.typecheck(cfg)), cfg)
-          case _                                    => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
+          case _ => c.abort(c.enclosingPosition, s"Unsupported arguments supplied to @$macroName")
         }
     }
   }
@@ -162,10 +180,11 @@ private[derivation] final class GenericJsonCodecMacros(val c: blackbox.Context) 
     } else {
       val tparamNames = tparams.map(_.name)
       def mkImplicitParams(prefix: String, typeSymbol: TypeSymbol) =
-        tparamNames.zipWithIndex.map { case (tparamName, i) =>
-          val paramName = TermName(s"$prefix$i")
-          val paramType = tq"$typeSymbol[$tparamName]"
-          q"$paramName: $paramType"
+        tparamNames.zipWithIndex.map {
+          case (tparamName, i) =>
+            val paramName = TermName(s"$prefix$i")
+            val paramType = tq"$typeSymbol[$tparamName]"
+            q"$paramName: $paramType"
         }
       val decodeParams = mkImplicitParams("decode", DecoderClass)
       val encodeParams = mkImplicitParams("encode", EncoderClass)
