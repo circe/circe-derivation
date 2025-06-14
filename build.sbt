@@ -1,15 +1,16 @@
 import sbtcrossproject.{ CrossType, crossProject }
 
-val Scala212V: String = "2.12.15"
-val Scala213V: String = "2.13.8"
+val Scala212V: String = "2.12.20"
+val Scala213V: String = "2.13.16"
 // val Scala3V: String = "3.1.3" - unsupported yet
 
 ThisBuild / circeRootOfCodeCoverage := Some("rootJVM")
 ThisBuild / tlBaseVersion := "0.13"
 ThisBuild / tlCiReleaseTags := true
-ThisBuild / tlFatalWarningsInCi := false // we currently have a lot of warnings that will need to be fixed
+ThisBuild / tlFatalWarnings := false //TODO: ... fix this someday
 
-ThisBuild / organization := "io.circe"
+ThisBuild / licenses := Seq(License.Apache2)
+ThisBuild / startYear := Some(2017)
 ThisBuild / crossScalaVersions := List(Scala212V, Scala213V) // List(Scala3V, Scala212V, Scala213V)
 ThisBuild / scalaVersion := Scala213V
 
