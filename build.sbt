@@ -107,7 +107,7 @@ lazy val derivation = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-generic" % circeVersion % Test,
       "io.circe" %%% "circe-parser" % circeVersion % Test,
       "io.circe" %%% "circe-testing" % circeVersion % Test,
-      "org.scalatestplus" %%% "scalacheck-1-14" % "3.2.2.0" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.11.0" % Test,
       "org.typelevel" %%% "discipline-scalatest" % "2.3.0" % Test
     ),
     ghpagesNoJekyll := true,
