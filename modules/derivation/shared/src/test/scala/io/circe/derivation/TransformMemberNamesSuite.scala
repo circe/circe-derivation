@@ -1,10 +1,11 @@
 package io.circe.derivation
 
 import io.circe.{ Codec, Decoder, Encoder, Json }
-import io.circe.examples.{ Bar, Baz, Foo, Qux }
+import io.circe.examples.{ Bar, Baz, Foo, Qux, Wibble }
 import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe.testing.CodecTests
+import scala.annotation.nowarn
 
 object TransformMemberNamesSuiteCodecs extends Serializable {
   implicit val decodeFoo: Decoder[Foo] = deriveDecoder(renaming.snakeCase, true, None)
@@ -28,6 +29,21 @@ object TransformMemberNamesSuiteCodecs extends Serializable {
     true,
     None
   )
+
+  val transformNames = (s: String) => s.toUpperCase()
+  @nowarn("msg=Failed to transform names at compile time. Transformation will happen at runtime on codec invocation instead. This is due to the limitations of scala.reflect.macros.blackbox.Context#eval")
+  implicit val decodeWibble: Decoder[Wibble] =
+    deriveDecoder(transformNames, true, None)
+  @nowarn("msg=Failed to transform names at compile time. Transformation will happen at runtime on codec invocation instead. This is due to the limitations of scala.reflect.macros.blackbox.Context#eval")
+  implicit val encodeWibble: Encoder[Wibble] =
+    deriveEncoder(transformNames, None)
+  @nowarn("msg=Failed to transform names at compile time. Transformation will happen at runtime on codec invocation instead. This is due to the limitations of scala.reflect.macros.blackbox.Context#eval")
+  val codecForWibble: Codec.AsObject[Wibble] = deriveCodec(
+    transformNames,
+    true,
+    None
+  )
+
 }
 
 class TransformMemberNamesSuite extends CirceSuite {
@@ -42,6 +58,8 @@ class TransformMemberNamesSuite extends CirceSuite {
   checkAll("Codec[Baz] via Codec", CodecTests[Baz](codecForBaz, codecForBaz).codec)
   checkAll("Codec[Qux[Baz]]", CodecTests[Qux[Baz]].codec)
   checkAll("Codec[Qux[Baz]] via Codec", CodecTests[Qux[Baz]](codecForQux, codecForQux).codec)
+  checkAll("Codec[Wibble]", CodecTests[Wibble].codec)
+  checkAll("Codec[Wibble] via Codec", CodecTests[Wibble](codecForWibble, codecForWibble).codec)
 
   checkAll("Codec[User]", CodecTests[User].codec)
   checkAll("Codec[User] via Codec", CodecTests[User](User.codecForUser, User.codecForUser).codec)
@@ -83,6 +101,16 @@ class TransformMemberNamesSuite extends CirceSuite {
       codecForQux,
       decodeQux,
       encodeQux
+    ).codecAgreement
+  )
+
+  checkAll(
+    "CodecAgreementWithCodec[Wibble]",
+    CodecAgreementTests[Wibble](
+      codecForWibble,
+      codecForWibble,
+      decodeWibble,
+      encodeWibble
     ).codecAgreement
   )
 
