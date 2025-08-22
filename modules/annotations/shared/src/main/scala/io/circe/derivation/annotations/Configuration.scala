@@ -25,6 +25,8 @@ sealed trait Configuration {
    */
   def transformConstructorNames: String => String
 
+  def strictDecoding: Boolean
+
   def useDefaults: Boolean
 
   def discriminator: Option[String]
@@ -67,7 +69,8 @@ object Configuration {
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     useDefaults: Boolean,
-    discriminator: Option[String]
+    discriminator: Option[String],
+    strictDecoding: Boolean = false
   ) extends Configuration {
 
     type Config = Codec
@@ -94,7 +97,8 @@ object Configuration {
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     useDefaults: Boolean,
-    discriminator: Option[String]
+    discriminator: Option[String],
+    strictDecoding: Boolean = false
   ) extends Configuration {
 
     type Config = DecodeOnly
@@ -119,7 +123,8 @@ object Configuration {
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     useDefaults: Boolean,
-    discriminator: Option[String]
+    discriminator: Option[String],
+    strictDecoding: Boolean = false
   ) extends Configuration {
 
     type Config = EncodeOnly

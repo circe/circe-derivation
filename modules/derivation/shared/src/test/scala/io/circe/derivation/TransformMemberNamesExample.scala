@@ -20,8 +20,8 @@ object TransformMemberNamesExample {
     implicit val eqUser: Eq[User] = Eq.fromUniversalEquals
 
     implicit val encodeUser: Encoder[User] = deriveEncoder(renaming.snakeCase, None)
-    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, None)
-    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, None)
+    implicit val decodeUser: Decoder[User] = deriveDecoder(renaming.snakeCase, true, None, false)
+    val codecForUser: Codec[User] = deriveCodec(renaming.snakeCase, true, None, false)
   }
 
   case class Role(title: String)
@@ -31,7 +31,7 @@ object TransformMemberNamesExample {
     implicit val eqRole: Eq[Role] = Eq.fromUniversalEquals
 
     implicit val encodeRole: Encoder[Role] = deriveEncoder(_.toUpperCase, None)
-    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, None)
+    implicit val decodeRole: Decoder[Role] = deriveDecoder(_.toUpperCase, true, None, false)
   }
 
   case class Address(number: Int, street: String, city: String)
@@ -50,7 +50,7 @@ object TransformMemberNamesExample {
     implicit val encodeAddress: Encoder[Address] =
       deriveEncoder(renaming.replaceWith("number" -> "#"), None)
     implicit val decodeAddress: Decoder[Address] =
-      deriveDecoder(renaming.replaceWith("number" -> "#"), true, None)
+      deriveDecoder(renaming.replaceWith("number" -> "#"), true, None, false)
   }
 
   case class Abc(a: String, b: String, c: String)
@@ -67,6 +67,6 @@ object TransformMemberNamesExample {
     implicit val eqAbc: Eq[Abc] = Eq.fromUniversalEquals
 
     implicit val encodeAbc: Encoder[Abc] = deriveEncoder(_ => "x", None)
-    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", true, None)
+    implicit val decodeAbc: Decoder[Abc] = deriveDecoder(_ => "x", true, None, false)
   }
 }
