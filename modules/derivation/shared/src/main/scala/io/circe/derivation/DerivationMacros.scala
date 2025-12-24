@@ -18,6 +18,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
 
   private[this] def failWithMessage(message: String): Nothing = c.abort(c.enclosingPosition, message)
   private[this] def nameOf(s: Symbol): String = s.asClass.name.decodedName.toString.trim
+  private[this] def stableSortedSubclasses(subclasses: Set[Symbol]): List[Symbol] = subclasses.toList.sortBy(nameOf)
 
   private[this] case class Instance(tc: Type, tpe: Type, name: TermName) {
     def resolve(): Tree = c.inferImplicitValue(appliedType(tc, List(tpe))) match {
@@ -358,7 +359,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     // We don't _really_ care about the order but want to be sure its stable here.
-    val subclassList: List[Symbol] = subclasses.toList
+    val subclassList: List[Symbol] = stableSortedSubclasses(subclasses)
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
 
@@ -743,7 +744,7 @@ class DerivationMacros(val c: blackbox.Context) extends ScalaVersionCompat {
     val tpe = weakTypeOf[T]
 
     // We don't _really_ care about the order but want to be sure its stable here.
-    val subclassList: List[Symbol] = subclasses.toList
+    val subclassList: List[Symbol] = stableSortedSubclasses(subclasses)
 
     def transformName(name: String): Tree = transformConstructorNames.fold[Tree](q"$name")(f => q"$f($name)")
 
